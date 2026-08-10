@@ -1,0 +1,33 @@
+> I don’t know what kind of environment you have available in this mode. But please explore the quant sampling compensation technique we discussed in the other chat, and take it as far as you are able in practical experiments and proof of concepts.
+
+I got a meaningful proof of concept, though this environment had no GPU, model weights, PyTorch, or `llama.cpp`, so the real-model experiment used a trained 384→64→96 next-token network rather than a transformer.
+
+Main findings at 64 paired contexts:
+
+* Pure logit flattening: fitted temperature reduced KL from `0.05295` to `0.000864`—essentially the correct solution.
+* Learned Q4 model: token-bias/PCA correction reduced KL by 46%, from `0.02438` to `0.01307`.
+* Learned Q3 model: reduced KL by 51%, from `0.12192` to `0.06032`.
+* Matching a reference T=0.8/top-p=0.95 sampler:
+
+  * Tuning temperature alone improved JS by only 10%.
+  * Direct residual correction improved it by 42%.
+* With only 8–16 contexts, the simple shrunken token-bias was usually safer; PCA became worthwhile around 32–64 contexts.
+* Under severe unseen context statistics, corrections still helped, but the simpler token bias sometimes generalized better than PCA.
+
+The most promising form is:
+
+[
+g(q)=a,\mathrm{center}(q)+b_{\mathrm{rank}}(q)+\mu_{\mathrm{token}}+\sum_j c_j(q)v_j
+]
+
+The final term is the Heretic-like component: SVD discovers dominant reference-minus-quant output directions, while a small predictor estimates their amplitude using only quantized logits. Crucially, it never uses reference logits during inference.
+
+![Low-sample calibration results](sandbox:/workspace/scratch/5ffac312b137/quant_sampler_lab/results/low_sample_kl.png)
+
+This direction now has fairly strong external support: [LFQ](https://arxiv.org/abs/2605.29756) finds that directly aligning full-precision token probabilities improves low-bit generation; a recent [quantized-reasoning study](https://arxiv.org/abs/2606.00206) isolates drift using identical prefixes and successfully applies token-specific logit penalties; and earlier [Bias Compensation](https://arxiv.org/abs/2404.01892) demonstrates related fitted output-bias corrections inside quantized models. The practical extraction path already exists because [`llama-perplexity`](https://github.com/ggml-org/llama.cpp/tree/master/tools/perplexity) can record reference logits and perform teacher-forced KL comparisons.
+
+The bundle contains the complete implementation, report, raw CSV/JSON results, and plots:
+
+[quant-sampler-compensation-lab.zip](sandbox:/workspace/scratch/5ffac312b137/quant-sampler-compensation-lab.zip)
+
+The next decisive experiment is an actual aligned GGUF pair—ideally Q8/BF16 versus Q3/Q4 of the same model—using 32–128 workload-representative teacher-forced positions. That will tell us whether real quantization residuals are predominantly temperature-like, stable token biases, or genuinely predictable low-rank directions.

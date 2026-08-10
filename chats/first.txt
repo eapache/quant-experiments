@@ -1,0 +1,654 @@
+> How does quantization typically affect the output distribution of an llm pre-sampling? Would it make sense to use different sampling configurations for a more heavily quantized model in order to compensate for this change? Is this efficiently predictable or generic, or would it have to be measured for a given model and quant?
+
+Yes, quantization changes the **logit distribution before sampling**, and in principle sampling parameters can compensate for some of that change. But the distortion is only partly generic; for anything beyond a mild correction, it needs to be measured for the specific model + quantization scheme.
+
+Suppose the full-precision model produces logits (z_i), and quantization changes them to
+
+[
+z'_i = z_i + \epsilon_i.
+]
+
+After softmax,
+
+[
+p_i=\frac{e^{z_i}}{\sum_j e^{z_j}}.
+]
+
+For small errors, the probability perturbation is approximately
+
+[
+\Delta p_i \approx p_i\left(\epsilon_i-\sum_jp_j\epsilon_j\right).
+]
+
+So what matters isn't just absolute quantization error: it's **error in the relative logit differences**.
+
+This produces several characteristic effects:
+
+* Tiny logit gaps between plausible tokens can flip ordering.
+* Low-probability/tail tokens can move proportionally much more than the dominant token.
+* Top-1/top-2 margins get noisy, so token choices become less stable.
+* The entropy of the distribution can shift.
+* The shape of the top-(k) distribution can change even when the greedy output remains identical.
+
+An idealized "add some zero-mean random noise to the logits" picture tends to **blur distinctions between nearby candidates**, making the model behave somewhat like it has a higher effective temperature. But actual LLM quantization error is structured rather than IID noise. Outlier weights, particular layers/channels, activation distributions, quantization groups, and clipping all matter. Consequently, real quants can end up either somewhat flatter **or** somewhat sharper/overconfident.
+
+That last point is why I would **not** recommend a generic rule like:
+
+> Q8 → temperature 0.8
+> Q4 → temperature 0.7
+> Q2 → temperature 0.5
+
+There isn't a universal mapping of that sort.
+
+### What sampling changes can compensate?
+
+**Temperature is the most principled knob.** If quantization primarily introduces a systematic change in logit scale,
+
+[
+z_\text{quant} \approx a z_\text{FP} + b,
+]
+
+then (b) disappears under softmax and you can nearly undo (a) using temperature:
+
+[
+T_\text{quant} \approx a.
+]
+
+For example, if quantization stretches the logits by 10%, a temperature around 1.1 could restore roughly the original distribution.
+
+That scalar rescaling is exceptionally cheap to estimate.
+
+Top-p, top-k, min-p, etc. are less clean as compensation mechanisms. They can compensate for changes in the **tail shape**, but they're nonlinear truncations rather than corrections to the underlying distribution. You might discover empirically that Q3 behaves better with min-p 0.08 instead of 0.05, but that doesn't imply you've actually "undone" the quantization.
+
+### How predictable is it?
+
+There are roughly three levels.
+
+**1. Generic expectation:** predictable.
+
+Lower-bit quantization generally means larger perturbations to logits, more token-rank instability, and increasing divergence from the reference distribution. Effects get particularly noticeable when several candidate tokens have similar logits.
+
+**2. Direction of entropy / ideal temperature correction:** somewhat predictable, but not reliably.
+
+A given quantizer/model combination might systematically sharpen or flatten the distribution. Quantization methods designed around perplexity/error preservation can behave quite differently from naive rounding.
+
+**3. Exact sampling adjustment:** empirical.
+
+This depends on:
+
+* model architecture
+* particular trained weights
+* bit depth
+* quantization algorithm
+* group size
+* importance weighting
+* mixed precision
+* whether embeddings/output head are quantized
+* activation/KV quantization
+* prompt/domain
+
+Even two different Q4 schemes of the same model may warrant different corrections.
+
+### Fortunately, measuring it is cheap
+
+You don't need a full benchmark suite. Run perhaps a few thousand representative prediction positions through both FP16/BF16 and the quantized model, and record the logits.
+
+Then measure things like:
+
+[
+D_{KL}(p_\text{FP}\parallel p_\text{quant})
+]
+
+along with:
+
+* entropy difference
+* top-1 agreement
+* top-5/top-20 rank agreement
+* top-1/top-2 logit margin
+* probability assigned to the FP model's chosen token
+* total probability mass in the FP model's top-p set
+
+Most usefully, fit a single scalar (T) minimizing
+
+[
+\sum_x D_{KL}
+\left(
+p_\text{FP}(x)
+\parallel
+\operatorname{softmax}(z_\text{quant}(x)/T)
+\right).
+]
+
+That tells you immediately whether there is a meaningful **global temperature bias**.
+
+You could go one step further and compare:
+
+1. raw quantized KL divergence,
+2. quantized divergence after optimal temperature,
+3. residual divergence.
+
+If temperature removes most of the difference, a different sampling temperature makes considerable sense. If it removes only 10% of the divergence, the quantization is mostly causing token-specific/ranking errors that sampling settings can't really fix.
+
+For something like the Q8/Q4/Q3 GGUFs you're running, this would actually be an interesting small experiment: capture logits from the same prompts and quantify exactly how much of the degradation is **simple logit-temperature miscalibration versus irreducible reshuffling**. My expectation is that good Q4 quants would show relatively little global calibration shift, while very aggressive quants would have a much larger residual after temperature fitting.
+
+> Could you design a very efficient, low sample way of estimating the correct sampling parameters for a quant, using something like how heretic identifies refusal directions?
+
+Yes. I think there is a fairly elegant **Heretic-like calibration procedure**, and it should need surprisingly little data because every token position gives you an entire vocabulary-sized distribution rather than one scalar observation.
+
+Heretic's relevant pattern is: identify a low-dimensional intervention, then automatically choose its parameters by trading off the desired behavioral change against KL divergence from the untouched model. Its current implementation uses TPE/Optuna for that optimization. ([GitHub][1]) The refusal-direction work it builds on similarly extracts candidate directions and then selects the one that produces the desired intervention with minimal collateral effect. ([GitHub][2])
+
+For quantization, I'd build a tool around **paired logit differences**. Call it, say, `quantcal`.
+
+1. **Collect a tiny paired calibration set.** Take perhaps 8 representative prompts and obtain ~64–128 continuation tokens for each. Ideally generate those continuations with the BF16/F16 reference model at your normal sampler settings, then teacher-force the *identical token sequence* through both reference and quantized models while recording logits. This gives ~500–1,000 paired prediction positions from only eight actual samples. You don't need independent generations from both models: paired contexts eliminate huge amounts of variance.
+
+2. **Fit the "temperature direction" analytically.** For each position you have reference logits (r_t) and quantized logits (q_t). Let the desired reference distribution at your ordinary temperature (T_0) be
+   [
+   p_t=\operatorname{softmax}(r_t/T_0).
+   ]
+   Find the quant temperature (T_q) minimizing
+   [
+   L(T_q)=\sum_t D_{KL}\left(
+   p_t \parallel \operatorname{softmax}(q_t/T_q)
+   \right).
+   ]
+   This is especially nice if you parameterize by inverse temperature (\beta=1/T_q): the objective is convex in (\beta). Its derivative is essentially
+   [
+   \sum_t\left[
+   E_{\operatorname{softmax}(\beta q_t)}q_t
+   ----------------------------------------
+
+   E_{p_t}q_t
+   \right],
+   ]
+   and the second derivative is a sum of variances. So Newton's method gets the optimum in a handful of iterations. No Bayesian optimization and no further model inference are required.
+
+3. **Measure how much of quantization is actually "temperature-like."** Compare
+   [
+   KL_\text{raw}
+   \quad\text{vs.}\quad
+   KL_\text{temperature-corrected}.
+   ]
+   Define something like
+   [
+   C_T=1-\frac{KL_\text{corrected}}{KL_\text{raw}}.
+   ]
+   If (C_T=0.8), you've learned something quite strong: 80% of the distributional distortion, by this metric, is essentially one-dimensional and sampler-correctable with temperature. If it's 0.1, changing temperature is mostly barking up the wrong tree.
+
+4. **Then calibrate truncation samplers entirely offline.** Define your reference sampler transformation as
+   [
+   P_t=S_{\theta_0}(r_t)
+   ]
+   and the quantized one as
+   [
+   Q_t=S_{\theta}(q_t),
+   ]
+   where (\theta) might contain temperature, min-p, top-p and top-k. Then simply minimize
+   [
+   \frac1N\sum_t JS(P_t,Q_t).
+   ]
+   I'd use Jensen–Shannon rather than KL here because min-p/top-p create literal zero probabilities. Once the logits are cached, trying 100,000 sampling configurations is trivial: you're just sorting/manipulating arrays. Unlike Heretic, **there's probably no reason to use Optuna at all**. A dense grid or coordinate search is cheap enough to find the actual optimum.
+
+5. **Use the residual to diagnose what sampler knob is appropriate.** After temperature correction, consider
+   [
+   e_{ti}=q_{ti}/T_q-r_{ti}/T_0.
+   ]
+   Additive constants don't matter, so center this per position. Now bin tokens according to their reference logit gap from the maximum or their reference probability/rank. If the residual is approximately flat, you've corrected essentially everything correctable. If it shows a systematic curve—say top-5 probabilities match but ranks 10–100 are inflated—that's exactly the sort of distortion min-p/top-p might compensate for. If instead you see idiosyncratic errors among the top competing tokens, **no permutation-invariant sampling parameter can undo them**.
+
+6. **Make the sample count adaptive rather than choosing a benchmark size.** Fit on four prompts, evaluate per-prompt optimums, then add perhaps four more. Bootstrap by *prompt*, not token position, because adjacent positions are highly correlated. Stop when the estimated (T), min-p, etc. stop moving materially. If different prompts want significantly different values, that's itself the answer: there is no useful global compensation for this quant.
+
+The particularly nice part is the analogy to a refusal direction. In logit space, the obvious first direction to test is
+
+[
+\boxed{\text{centered reference-logit vector}}
+]
+
+because movement parallel to that vector is exactly a **logit-scale/temperature change**. You are effectively asking:
+
+[
+\Delta z_\text{quant}
+=====================
+
+a,z_\text{reference}
++
+\epsilon.
+]
+
+Heretic asks whether a complicated behavioral change has a dominant direction in activation space; here we're asking whether quantization error has a dominant **radial direction in logit space**. The projection coefficient (a) gives you the temperature correction, while (\epsilon) tells you how much damage isn't sampler-correctable.
+
+### I would make one further optimization
+
+Don't retain all 150k logits at every position. For each prediction, keep the union of the reference and quant model's highest-probability tokens until, say, virtually all probability mass is accounted for, along with the total omitted tail mass. The sampler-relevant distribution then becomes only tens/hundreds of values per position rather than an entire vocabulary vector.
+
+And I'd deliberately stratify the calibration positions by **reference entropy**. A thousand near-deterministic positions such as punctuation are almost useless. The high-information positions are ones where several tokens genuinely compete and where the min-p/top-p boundary actually matters. You can get a large amount of calibration signal from perhaps a few hundred such positions.
+
+### The result I'd want the tool to print
+
+Something conceptually like:
+
+```text
+Reference: BF16
+Quant:     Q3_K_XL
+
+Samples: 8 prompts / 742 prediction positions
+
+Raw mean JS:                 0.0218
+
+Temperature-only optimum:
+    reference temp:          0.80
+    quant temp:              0.74
+    mean JS:                 0.0151
+    correctable fraction:    31%
+
+Full sampler optimum:
+    temperature:             0.75
+    min-p:                   0.061   (reference 0.05)
+    top-p:                   0.95    (unchanged)
+    mean JS:                 0.0139
+    correctable fraction:    36%
+
+Cross-validation:
+    T = 0.75 ± 0.02
+    min-p = 0.060 ± 0.008
+
+Conclusion:
+    Small, stable sampling correction recommended.
+    ~64% of measured quantization distortion is not sampler-correctable.
+```
+
+Those numbers are illustrative, but that's the interface I'd aim for.
+
+The **cross-validation stability is probably more valuable than the nominal optimum**. If a Q4 quant consistently wants `T=0.78` instead of `0.80` across eight very different prompts, I'd be comfortable calling that a property of the quant. If one prompt wants 0.65 and another wants 0.93, averaging them to 0.79 hides the important result.
+
+I suspect this could become an extremely cheap quantization diagnostic: **one short BF16 run + one short quantized run, followed by essentially unlimited offline sampler optimization**. It could simultaneously answer both "what sampler should I use?" and the more scientifically interesting question, "how much of this quant's degradation is simple distributional miscalibration versus irreducible token-ranking corruption?"
+
+[1]: https://github.com/p-e-w/heretic "GitHub - p-e-w/heretic: Fully automatic censorship removal for language models · GitHub"
+[2]: https://github.com/andyrdt/refusal_direction "GitHub - andyrdt/refusal_direction: Code and results accompanying the paper \"Refusal in Language Models Is Mediated by a Single Direction\". · GitHub"
+
+
+> Are there other potential sampler methods that would more directly correct for the distributional shifts? Maybe ones that don't make sense for normal models?
+
+Yes. In fact, once the goal is specifically **“make this quantized model sample as though it were the reference model”**, several samplers become natural that would be rather pointless on an ordinary model.
+
+The most promising one to me is a **logit-gap calibration sampler**.
+
+Instead of applying one global temperature,
+
+[
+z_i' = z_i/T,
+]
+
+learn a small monotonic function of the distance from the best token:
+
+[
+d_i=q_{\max}-q_i
+]
+
+and map it to an estimated reference-model gap
+
+[
+\hat d_i=f(d_i).
+]
+
+Then sample from
+
+[
+\hat z_i=-f(d_i).
+]
+
+If quantization compresses close competitors but exaggerates larger gaps, for example, `f` can directly undo that shape. A piecewise-linear spline with perhaps 8–16 knots could probably be estimated from a tiny calibration set. Unlike temperature, it can correct:
+
+> “0–1 logit gaps are compressed 15%, 1–4 are fine, >4 are expanded 8%.”
+
+That seems much closer to the actual problem than changing top-p.
+
+A few increasingly sophisticated variants seem worthwhile:
+
+* **Rank-conditioned gap calibration.** Use (f(d,\text{rank})), so top-5 candidates can be corrected differently from rank 50–200. This directly handles quantizers that preserve the head well but distort the tail.
+* **Context-adaptive calibration.** Let the correction depend on a few statistics such as quantized entropy, top-1/top-2 margin and top-10 spread:
+  [
+  f(d; H,\Delta_{12},\ldots).
+  ]
+  A quant might need almost no correction on confident predictions but substantial correction on ambiguous ones. A fixed temperature cannot express this.
+* **Cumulative-mass calibration.** Learn the mapping between the quantized model's cumulative probability curve and the reference model's. Instead of saying “top-p = 0.95,” choose the cutoff whose **estimated reference mass** is 0.95. This would effectively be a quant-aware version of nucleus sampling.
+
+The latter is particularly interesting because it could produce strange-looking sampler settings that make no intrinsic sense. For example, the algorithm might retain quant-model mass 0.972 because calibration says that corresponds to ~0.95 reference-model mass.
+
+### A more direct approach: a tiny logit denoiser
+
+You could go beyond scalar/spline transformations and learn
+
+[
+\hat{\mathbf z}*{ref}=F(\mathbf z*{quant})
+]
+
+where (F) is an extremely small, heavily regularized transformation.
+
+You don't need the whole vocabulary. Take the top ~64–256 candidates and describe the distribution by its centered ordered logits:
+
+[
+[q_{(1)}-q_{(1)},,
+q_{(2)}-q_{(1)},,
+\ldots].
+]
+
+Then fit something like a low-rank affine map:
+
+[
+\hat r = Aq+b
+]
+
+with (A) constrained strongly toward the identity.
+
+This is essentially **calibration/dequantization in logit space**.
+
+PCA/SVD on paired errors might reveal that the distortion really is only 2–4 dimensional:
+
+[
+r-q \approx
+a_1v_1+a_2v_2+a_3v_3.
+]
+
+That would be the closest analogue to Heretic's directional approach. Instead of discovering one refusal direction in activation space, you'd discover a few **quantization-error directions in distribution-shape space**.
+
+The inference overhead would be negligible.
+
+### An even more quant-specific sampler: uncertainty-aware sampling
+
+There's another direction that wouldn't really make sense for a pristine model.
+
+Treat the quantized logits as a noisy observation of latent reference logits:
+
+[
+q_i = r_i+\epsilon_i.
+]
+
+From paired calibration data, estimate something like
+
+[
+P(r\mid q,\text{distribution features}).
+]
+
+Then don't sample directly from `softmax(q)`. Sample from the **posterior predictive reference distribution**
+
+[
+P(token=i\mid q)
+================
+
+E_{r\mid q}[\operatorname{softmax}(r)_i].
+]
+
+You could approximate this very cheaply over only the top 32–128 candidates.
+
+That has an attractive interpretation. If the quant says
+
+```text
+A   8.12
+B   8.09
+```
+
+but calibration tells you that Q3 logits in this regime have ±0.15-logit uncertainty, you shouldn't take the 0.03 difference very seriously.
+
+Conversely:
+
+```text
+A   8.12
+B   5.30
+```
+
+requires essentially no correction.
+
+So the sampler could automatically become more conservative around **quantization-uncertain margins**.
+
+### Pairwise calibration might be especially sample-efficient
+
+Rather than calibrating absolute logits, train on pairwise gaps:
+
+[
+d^q_{ij}=q_i-q_j
+]
+
+versus
+
+[
+d^r_{ij}=r_i-r_j.
+]
+
+Estimate
+
+[
+E[d^r_{ij}\mid d^q_{ij}, H, rank_i, rank_j,\ldots].
+]
+
+One prediction position containing 50 plausible tokens gives you (50\times49/2=1225) pairwise observations. They're correlated, of course, but that's still a huge amount of structural information from very few prompts.
+
+This would directly tell you things like:
+
+> Quant gap 0.1 → expected reference gap 0.06
+> Quant gap 0.5 → expected reference gap 0.48
+> Quant gap 2 → expected reference gap 2.15
+
+That can then be reconstructed into corrected logits.
+
+### Token-specific correction is also possible
+
+One thing ordinary sampling deliberately avoids is token identity. But quantization may introduce systematic token-dependent errors, especially through the output projection.
+
+You could estimate
+
+[
+\hat r_i=q_i+b_i
+]
+
+where (b_i) is a tiny learned bias.
+
+Doing this independently for 150k vocabulary entries would require far too much data, but you could regularize it by features such as:
+
+* output-embedding norm;
+* token frequency;
+* quantization error of that output row;
+* punctuation/whitespace/code/etc.;
+* magnitude/outlier characteristics of its weights.
+
+This is unusual as a sampler but completely defensible as **quantization compensation**.
+
+And unlike temperature or rank-based calibration, it can actually fix systematic **rank reversals** between particular tokens.
+
+### There's an important boundary
+
+A useful hierarchy is:
+
+[
+\text{temperature}
+\subset
+\text{gap spline}
+\subset
+\text{rank/context calibration}
+\subset
+\text{low-rank logit denoiser}
+\subset
+\text{token-aware denoiser}.
+]
+
+Each additional level can correct a larger class of quantization artifacts, but needs more calibration data.
+
+I would test them in exactly that sequence and stop when held-out KL/JS stops improving.
+
+The likely sweet spot is something like
+
+[
+\boxed{
+\hat d_i =
+f(d_i,\log(rank_i),H,\Delta_{12})
+}
+]
+
+with a very small monotonic spline or GAM. It could be evaluated over only the top ~128 tokens and would add essentially negligible runtime overhead.
+
+And there's a useful conceptual difference from normal sampling: **the sampler isn't deciding how creative the model should be anymore. It's acting as a calibrated inverse of the quantizer's statistical distortion, after which you apply the user's actual temperature/min-p/etc.**
+
+I think that separation—**quant-correction transform → ordinary sampler**—would be much cleaner than trying to publish “recommended temperature/min-p for Q4.”
+
+
+> Is there any existing research into these directions? In academia, or on Reddit or github?
+
+Yes. There is now a surprisingly close body of work, although I could not find anyone who has quite put the pieces together into the **post-hoc quantization-correcting sampler** we were describing.
+
+The closest work falls into three groups.
+
+### 1. Very close academically: explicitly matching the FP logit distribution
+
+The strongest match is **LFQ: Logit-aware Final-block Quantization** from May 2026. Its central observation is almost exactly our premise: standard PTQ can preserve intermediate activations while nevertheless shifting the next-token probability distribution enough to degrade generation. They therefore optimize the final transformer block against the **cross-entropy/KL of the FP model's token distribution**, rather than ordinary activation MSE. ([arXiv][1])
+
+Their examples explicitly show quantization changing ordering among plausible tokens and producing over/under-confidence in particular candidates. ([arXiv][1])
+
+The important difference is where they apply the correction:
+
+[
+\text{FP logits}
+\rightarrow
+\boxed{\text{change quantizer}}
+\rightarrow
+\text{better quant logits}
+]
+
+whereas we're proposing
+
+[
+\text{FP logits}
+\rightarrow
+\text{learn calibration transform}
+]
+
+and at runtime
+
+[
+\text{quant logits}
+\rightarrow
+\boxed{\text{corrective sampler transform}}
+\rightarrow
+\text{corrected logits}.
+]
+
+So LFQ provides strong evidence that the objective is meaningful, but moves the model weights rather than correcting after inference.
+
+Even more relevant conceptually is **Statistically-Lossless Quantization (SLQ)** from May 2026. It explicitly defines *distribution-lossless quantization*: the quantized next-token distribution should be practically indistinguishable from the FP distribution. It evaluates KL plus an Expected Acceptance Rate,
+
+[
+\mathrm{EAR} = \sum_i \min(p_i,q_i),
+]
+
+which has a very intuitive interpretation as maximum agreement probability under optimal coupling. ([arXiv][2])
+
+That paper is almost a ready-made **objective function for our sampler**. Instead of spending extra bits until EAR reaches 0.99, you could ask how much EAR a cheap post-logit transformation recovers.
+
+### 2. The closest thing I've found to an actual quant-aware sampler
+
+The June 2026 Meta paper **“Quantized Reasoning Models Think They Need to Think Longer, but They Do Not”** gets remarkably close.
+
+They run the FP and quantized model under **identical generation prefixes** and calculate token-level KL between the distributions—exactly the paired-context experiment I suggested. They find that the divergence is strongly dependent on the state of the distribution: position-level KL correlates with FP next-token entropy at **Spearman (\rho=0.92)**. ([arXiv][3])
+
+More interestingly, the distortion isn't token-neutral. High-KL tokens disproportionately include reasoning-branching/hesitation tokens such as *Wait*, *But*, *Alternatively*, *maybe*, etc. ([arXiv][3])
+
+And then they actually fix it **at decoding time**: they apply a fixed logit penalty to a curated set of those tokens. Random-token penalties don't provide the same benefit, while penalizing the wrong low-KL tokens can badly hurt performance. ([arXiv][3])
+
+That's basically a primitive version of our proposed:
+
+[
+\hat z_i=z_i+b_i
+]
+
+token-aware quantization correction.
+
+The important limitation is that theirs is deliberately task-specific: they identify a semantic failure mode—quantization causing reasoning models to branch excessively—and manually penalize the associated token set. They do **not** learn a general transform (F(z_q)\approx z_{FP}).
+
+But of everything I found, this is the closest demonstration that **post-quantization logit correction during decoding can recover behavior**.
+
+### 3. There is already evidence that sampling parameters ought to change after quantization
+
+An EMNLP 2024 paper, **“A Thorough Examination of Decoding Methods in the Era of LLMs,”** explicitly tested decoding strategies on FP16, INT8 and INT4 Llama-2 models. Their conclusion was that optimal decoding hyperparameters vary with the **quantization setting**, and quantized models became less robust to the choice of decoding strategy. Some stochastic samplers changed substantially in performance after quantization while deterministic decoding moved much less. ([arXiv][4])
+
+They specifically speculate that quantization's effect on token entropy during decoding cannot be ignored. ([arXiv][4])
+
+So your original question—“should sampling parameters depend on the quant?”—already has an empirical **yes** in the literature. What they don't do is derive those settings from the FP→quant distribution shift.
+
+There are also two adjacent sampler papers that supply useful machinery. **Adaptive Temperature Scaling** learns a **different temperature for every token prediction**, based on token-level features, to correct calibration shifts introduced by RLHF rather than quantization. ([arXiv][5]) That is almost exactly the mechanism we'd want if quantization's effective-temperature distortion depends on entropy/margin.
+
+And 2026's **Min-(k)** sampler examines the **local shape of sorted logits** and chooses its cutoff from relative logit dynamics rather than fixed probability thresholds. It is explicitly designed to be invariant to temperature scaling. ([arXiv][6]) A quant-aware variant using a learned FP↔quant gap mapping would be a natural extension.
+
+---
+
+### The open-source/practitioner world is even closer
+
+`llama.cpp` already has most of the measurement plumbing needed. Its perplexity tool can save reference logits from an FP model and then calculate KL divergence against a quantized model with `--kl-divergence-base` / `--kl-divergence`. ([GitHub][7])
+
+And people have been doing exactly this for years. A **2023 LocalLLaMA experiment** modified KoboldCPP to record probabilities for a predetermined sequence and compared FP16 against GGUF quants by KL divergence using only about **350 tokens** of Wikipedia. ([Reddit][8]) That is remarkably close to the low-sample calibration experiment we just independently arrived at.
+
+More recently, community quant comparisons routinely use BF16 reference logits and KLD. One Qwen3.5-35B-A3B comparison from 2026 evaluates many different Q4 recipes against the same BF16 logit baseline and finds quite large differences between nominally similar Q4 files. ([Reddit][9]) This reinforces an important point from our earlier discussion: a calibration should probably be **per actual quant recipe**, not merely “Q4 vs Q5.”
+
+There is even a current `advanced-gguf-quantizer` project doing **KLD-driven searches over quantization recipes**. ([GitHub][10]) Again, they're optimizing the quant rather than applying a corrective transformation afterward.
+
+On Reddit, the sampling-compensation intuition is definitely circulating. A recent LocalLLaMA discussion explicitly asks whether heavily quantized models can be stabilized by lowering temperature/top-p, and another recent discussion reports the practitioner rule that lower quants often need more restrictive sampling, while acknowledging that the correct amount depends on model/quant. ([Reddit][11]) These are anecdotal rather than controlled results.
+
+### What I *didn't* find
+
+After searching specifically for quantization-aware decoding, quant-aware samplers, logit calibration of quantized LLMs, and post-hoc quant-logit correction, I did **not** find a paper or established GitHub project implementing the general method:
+
+[
+\boxed{
+F_\theta(z_{\mathrm{quant}},,
+H,,
+\text{rank},,
+\text{margin},\ldots)
+\approx
+z_{\mathrm{FP}}
+}
+]
+
+with (F) learned from a tiny paired calibration corpus and inserted immediately before the ordinary sampler.
+
+Nor did I find the particularly simple version we discussed:
+
+[
+d_q=z_{q,\max}-z_{q,i}
+]
+
+learn
+
+[
+d_{FP}\approx f(d_q)
+]
+
+and replace the quant's logit gaps with (f(d_q)) before normal temperature/min-p sampling.
+
+That looks like an actual gap rather than merely something I failed to recognize under a standard name. The literature has separately established almost every ingredient:
+
+**paired FP/quant logits** → established;
+**KL/distribution fidelity as the right metric** → established;
+**quantization distortion depends strongly on uncertainty** → established;
+**token-specific quantization distortions exist** → established;
+**decode-time logit intervention can mitigate quantization failure** → demonstrated;
+**per-token adaptive temperature calibration** → established outside quantization;
+**quantization changes which sampler/hyperparameters work best** → established.
+
+What's apparently missing is the obvious composition:
+
+[
+\boxed{\text{learn the cheapest inverse distortion and deploy it as a sampler stage}}
+]
+
+That makes the experiment we discussed considerably more interesting than I initially thought. **A first version could probably be implemented entirely around `llama-perplexity`'s existing reference-logit machinery**, without modifying quantization at all: export paired distributions, fit temperature → monotone gap spline → entropy-conditioned spline → token biases in succession, cross-validate on a few held-out text chunks, and then add the winning transformation as a tiny `llama.cpp` sampler.
+
+The Meta reasoning paper in particular gives a strong citation for why this isn't just “tweaking temperature”: their (\rho=0.92) entropy result predicts that a **context-adaptive correction should outperform any global sampler setting**. ([arXiv][3])
+
+[1]: https://arxiv.org/html/2605.29756 "LFQ: Logit-aware Final-block Quantization for Boosting the Generation Quality of Low-Bit Quantized LLMs"
+[2]: https://arxiv.org/abs/2605.02404?utm_source=chatgpt.com "Statistically-Lossless Quantization of Large Language Models"
+[3]: https://arxiv.org/html/2606.00206v1 "Quantized Reasoning Models Think They Need to Think Longer, but They Do Not"
+[4]: https://arxiv.org/html/2402.06925v1 "A Thorough Examination of Decoding Methods in the Era of LLMs"
+[5]: https://arxiv.org/abs/2409.19817?utm_source=chatgpt.com "Calibrating Language Models with Adaptive Temperature Scaling"
+[6]: https://arxiv.org/abs/2604.11012?utm_source=chatgpt.com "Min-$k$ Sampling: Decoupling Truncation from Temperature Scaling via Relative Logit Dynamics"
+[7]: https://github.com/ggml-org/llama.cpp/blob/master/tools/perplexity/README.md?utm_source=chatgpt.com "llama.cpp/tools/perplexity/README.md at master · ggml- ..."
+[8]: https://www.reddit.com/r/LocalLLaMA/comments/1816h1x/how_much_does_quantization_actually_impact_models/ "How much does Quantization actually impact models? - KL Divergence Tests : r/LocalLLaMA"
+[9]: https://www.reddit.com/r/LocalLLaMA/comments/1rfds1h/qwen3535ba3b_q4_quantization_comparison/ "Qwen3.5-35B-A3B Q4 Quantization Comparison : r/LocalLLaMA"
+[10]: https://github.com/ggml-org/llama.cpp/discussions/23853?utm_source=chatgpt.com "my advanced-gguf-quantizer tool for NVFP4,MXFP6,Q2,Q3 ..."
+[11]: https://www.reddit.com/r/LocalLLaMA/comments/1ts94t8/has_anyone_experimented_with_stabilizing_low/ "Has anyone experimented with stabilizing low quant models with lower temp and top p? : r/LocalLLaMA"
+

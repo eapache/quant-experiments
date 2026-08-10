@@ -1,0 +1,1744 @@
+{
+  "configuration": {
+    "seed": 1729,
+    "quick": false,
+    "sample_sizes": [
+      2,
+      4,
+      8,
+      16,
+      32,
+      64
+    ],
+    "trials": 5
+  },
+  "micro_lm": {
+    "train_examples": 36000,
+    "test_examples": 6000,
+    "vocab": 96,
+    "context_len": 4,
+    "train_seconds": 4.906517267227173,
+    "training_iterations": 24,
+    "relative_weight_rmse_q4": 0.09835445014605085,
+    "relative_weight_rmse_q3": 0.22957066784246336
+  },
+  "calibration_summary": [
+    {
+      "source": "controlled:mixed",
+      "calibration_contexts": 2,
+      "method": "identity",
+      "mean": 0.11000849709732845,
+      "std": 0.0
+    },
+    {
+      "source": "controlled:mixed",
+      "calibration_contexts": 2,
+      "method": "isotonic",
+      "mean": 0.1099427515568169,
+      "std": 0.01942591079714744
+    },
+    {
+      "source": "controlled:mixed",
+      "calibration_contexts": 2,
+      "method": "temperature",
+      "mean": 0.08152768847595929,
+      "std": 0.0005997357039333594
+    },
+    {
+      "source": "controlled:mixed",
+      "calibration_contexts": 2,
+      "method": "temperature+rank",
+      "mean": 0.08535676075754264,
+      "std": 0.003888723614025911
+    },
+    {
+      "source": "controlled:mixed",
+      "calibration_contexts": 2,
+      "method": "temperature+token-bias",
+      "mean": 0.07807956194520303,
+      "std": 0.0015262661746318416
+    },
+    {
+      "source": "controlled:mixed",
+      "calibration_contexts": 2,
+      "method": "temperature+token-bias+PCA",
+      "mean": 0.07807956194520302,
+      "std": 0.0015262661746318362
+    },
+    {
+      "source": "controlled:mixed",
+      "calibration_contexts": 4,
+      "method": "identity",
+      "mean": 0.11000849709732845,
+      "std": 0.0
+    },
+    {
+      "source": "controlled:mixed",
+      "calibration_contexts": 4,
+      "method": "isotonic",
+      "mean": 0.09590395073514787,
+      "std": 0.011333304104335664
+    },
+    {
+      "source": "controlled:mixed",
+      "calibration_contexts": 4,
+      "method": "temperature",
+      "mean": 0.08213183155382775,
+      "std": 0.001299130273386395
+    },
+    {
+      "source": "controlled:mixed",
+      "calibration_contexts": 4,
+      "method": "temperature+rank",
+      "mean": 0.08339380096020674,
+      "std": 0.0020348368127402123
+    },
+    {
+      "source": "controlled:mixed",
+      "calibration_contexts": 4,
+      "method": "temperature+token-bias",
+      "mean": 0.07674274126256653,
+      "std": 0.0015852560450902613
+    },
+    {
+      "source": "controlled:mixed",
+      "calibration_contexts": 4,
+      "method": "temperature+token-bias+PCA",
+      "mean": 0.06196768483027215,
+      "std": 0.005661777596423418
+    },
+    {
+      "source": "controlled:mixed",
+      "calibration_contexts": 8,
+      "method": "identity",
+      "mean": 0.11000849709732845,
+      "std": 0.0
+    },
+    {
+      "source": "controlled:mixed",
+      "calibration_contexts": 8,
+      "method": "isotonic",
+      "mean": 0.08844969918347537,
+      "std": 0.0031844385925391605
+    },
+    {
+      "source": "controlled:mixed",
+      "calibration_contexts": 8,
+      "method": "temperature",
+      "mean": 0.08122658223461818,
+      "std": 0.0005518289342907067
+    },
+    {
+      "source": "controlled:mixed",
+      "calibration_contexts": 8,
+      "method": "temperature+rank",
+      "mean": 0.0820758518461024,
+      "std": 0.0017443760048446216
+    },
+    {
+      "source": "controlled:mixed",
+      "calibration_contexts": 8,
+      "method": "temperature+token-bias",
+      "mean": 0.0758130626712684,
+      "std": 0.0019474843150303546
+    },
+    {
+      "source": "controlled:mixed",
+      "calibration_contexts": 8,
+      "method": "temperature+token-bias+PCA",
+      "mean": 0.01922421743780032,
+      "std": 0.007402850989875232
+    },
+    {
+      "source": "controlled:mixed",
+      "calibration_contexts": 16,
+      "method": "identity",
+      "mean": 0.11000849709732845,
+      "std": 0.0
+    },
+    {
+      "source": "controlled:mixed",
+      "calibration_contexts": 16,
+      "method": "isotonic",
+      "mean": 0.08566526507873562,
+      "std": 0.0016566880236436499
+    },
+    {
+      "source": "controlled:mixed",
+      "calibration_contexts": 16,
+      "method": "temperature",
+      "mean": 0.08073211504355057,
+      "std": 0.00016147271551411176
+    },
+    {
+      "source": "controlled:mixed",
+      "calibration_contexts": 16,
+      "method": "temperature+rank",
+      "mean": 0.08037704115769498,
+      "std": 0.0007788611808170841
+    },
+    {
+      "source": "controlled:mixed",
+      "calibration_contexts": 16,
+      "method": "temperature+token-bias",
+      "mean": 0.07345781062495801,
+      "std": 0.0011909038448074593
+    },
+    {
+      "source": "controlled:mixed",
+      "calibration_contexts": 16,
+      "method": "temperature+token-bias+PCA",
+      "mean": 0.009918497101921605,
+      "std": 0.000596074915065959
+    },
+    {
+      "source": "controlled:mixed",
+      "calibration_contexts": 32,
+      "method": "identity",
+      "mean": 0.11000849709732845,
+      "std": 0.0
+    },
+    {
+      "source": "controlled:mixed",
+      "calibration_contexts": 32,
+      "method": "isotonic",
+      "mean": 0.08341696513026364,
+      "std": 0.002157435999259942
+    },
+    {
+      "source": "controlled:mixed",
+      "calibration_contexts": 32,
+      "method": "temperature",
+      "mean": 0.08062432165873508,
+      "std": 0.00011441893247243155
+    },
+    {
+      "source": "controlled:mixed",
+      "calibration_contexts": 32,
+      "method": "temperature+rank",
+      "mean": 0.07953291176232019,
+      "std": 0.00028449676145652394
+    },
+    {
+      "source": "controlled:mixed",
+      "calibration_contexts": 32,
+      "method": "temperature+token-bias",
+      "mean": 0.07221772761951509,
+      "std": 0.001456238209828406
+    },
+    {
+      "source": "controlled:mixed",
+      "calibration_contexts": 32,
+      "method": "temperature+token-bias+PCA",
+      "mean": 0.0073556642005985174,
+      "std": 0.0005525089176720482
+    },
+    {
+      "source": "controlled:mixed",
+      "calibration_contexts": 64,
+      "method": "identity",
+      "mean": 0.11000849709732845,
+      "std": 0.0
+    },
+    {
+      "source": "controlled:mixed",
+      "calibration_contexts": 64,
+      "method": "isotonic",
+      "mean": 0.08168055036877517,
+      "std": 0.0005886769723526897
+    },
+    {
+      "source": "controlled:mixed",
+      "calibration_contexts": 64,
+      "method": "temperature",
+      "mean": 0.08054043016010966,
+      "std": 4.909669201978923e-06
+    },
+    {
+      "source": "controlled:mixed",
+      "calibration_contexts": 64,
+      "method": "temperature+rank",
+      "mean": 0.07923693524057988,
+      "std": 9.698662799232341e-05
+    },
+    {
+      "source": "controlled:mixed",
+      "calibration_contexts": 64,
+      "method": "temperature+token-bias",
+      "mean": 0.07088238698225131,
+      "std": 0.0003999327353889141
+    },
+    {
+      "source": "controlled:mixed",
+      "calibration_contexts": 64,
+      "method": "temperature+token-bias+PCA",
+      "mean": 0.006203708389273759,
+      "std": 0.00017872203737088801
+    },
+    {
+      "source": "controlled:scale",
+      "calibration_contexts": 2,
+      "method": "identity",
+      "mean": 0.05295212707143143,
+      "std": 0.0
+    },
+    {
+      "source": "controlled:scale",
+      "calibration_contexts": 2,
+      "method": "isotonic",
+      "mean": 0.023949083434015743,
+      "std": 0.013299125902310676
+    },
+    {
+      "source": "controlled:scale",
+      "calibration_contexts": 2,
+      "method": "temperature",
+      "mean": 0.0009267420533874851,
+      "std": 5.749561197845562e-05
+    },
+    {
+      "source": "controlled:scale",
+      "calibration_contexts": 2,
+      "method": "temperature+rank",
+      "mean": 0.0011266506057517971,
+      "std": 0.00015820116147808919
+    },
+    {
+      "source": "controlled:scale",
+      "calibration_contexts": 2,
+      "method": "temperature+token-bias",
+      "mean": 0.0009358003501767182,
+      "std": 5.1585312437504886e-05
+    },
+    {
+      "source": "controlled:scale",
+      "calibration_contexts": 2,
+      "method": "temperature+token-bias+PCA",
+      "mean": 0.0009358003501767182,
+      "std": 5.15853124375061e-05
+    },
+    {
+      "source": "controlled:scale",
+      "calibration_contexts": 4,
+      "method": "identity",
+      "mean": 0.05295212707143143,
+      "std": 0.0
+    },
+    {
+      "source": "controlled:scale",
+      "calibration_contexts": 4,
+      "method": "isotonic",
+      "mean": 0.012565756055521007,
+      "std": 0.007325136580019762
+    },
+    {
+      "source": "controlled:scale",
+      "calibration_contexts": 4,
+      "method": "temperature",
+      "mean": 0.0008824005728465765,
+      "std": 2.4771095489165874e-05
+    },
+    {
+      "source": "controlled:scale",
+      "calibration_contexts": 4,
+      "method": "temperature+rank",
+      "mean": 0.0009990728671995085,
+      "std": 0.00010621148664844064
+    },
+    {
+      "source": "controlled:scale",
+      "calibration_contexts": 4,
+      "method": "temperature+token-bias",
+      "mean": 0.0009062710698957572,
+      "std": 2.254921973146371e-05
+    },
+    {
+      "source": "controlled:scale",
+      "calibration_contexts": 4,
+      "method": "temperature+token-bias+PCA",
+      "mean": 0.0009230532288985252,
+      "std": 4.297595402816539e-05
+    },
+    {
+      "source": "controlled:scale",
+      "calibration_contexts": 8,
+      "method": "identity",
+      "mean": 0.05295212707143143,
+      "std": 0.0
+    },
+    {
+      "source": "controlled:scale",
+      "calibration_contexts": 8,
+      "method": "isotonic",
+      "mean": 0.00939877004023397,
+      "std": 0.005490388860532241
+    },
+    {
+      "source": "controlled:scale",
+      "calibration_contexts": 8,
+      "method": "temperature",
+      "mean": 0.0008678054207699555,
+      "std": 9.813577960303129e-06
+    },
+    {
+      "source": "controlled:scale",
+      "calibration_contexts": 8,
+      "method": "temperature+rank",
+      "mean": 0.0009065016556960922,
+      "std": 3.0419558962126667e-05
+    },
+    {
+      "source": "controlled:scale",
+      "calibration_contexts": 8,
+      "method": "temperature+token-bias",
+      "mean": 0.0008964152492562499,
+      "std": 9.00005250019087e-06
+    },
+    {
+      "source": "controlled:scale",
+      "calibration_contexts": 8,
+      "method": "temperature+token-bias+PCA",
+      "mean": 0.0009432414998996842,
+      "std": 3.1567235257739685e-05
+    },
+    {
+      "source": "controlled:scale",
+      "calibration_contexts": 16,
+      "method": "identity",
+      "mean": 0.05295212707143143,
+      "std": 0.0
+    },
+    {
+      "source": "controlled:scale",
+      "calibration_contexts": 16,
+      "method": "isotonic",
+      "mean": 0.004718278269995326,
+      "std": 0.004397810594250303
+    },
+    {
+      "source": "controlled:scale",
+      "calibration_contexts": 16,
+      "method": "temperature",
+      "mean": 0.0008686868004842121,
+      "std": 6.983358690977959e-06
+    },
+    {
+      "source": "controlled:scale",
+      "calibration_contexts": 16,
+      "method": "temperature+rank",
+      "mean": 0.0008777085975615407,
+      "std": 6.489873203492244e-06
+    },
+    {
+      "source": "controlled:scale",
+      "calibration_contexts": 16,
+      "method": "temperature+token-bias",
+      "mean": 0.0008897050412553073,
+      "std": 3.6957855827426538e-06
+    },
+    {
+      "source": "controlled:scale",
+      "calibration_contexts": 16,
+      "method": "temperature+token-bias+PCA",
+      "mean": 0.0009221008110698719,
+      "std": 9.55014423134448e-06
+    },
+    {
+      "source": "controlled:scale",
+      "calibration_contexts": 32,
+      "method": "identity",
+      "mean": 0.05295212707143143,
+      "std": 0.0
+    },
+    {
+      "source": "controlled:scale",
+      "calibration_contexts": 32,
+      "method": "isotonic",
+      "mean": 0.0025528568979228347,
+      "std": 0.0014308851404442376
+    },
+    {
+      "source": "controlled:scale",
+      "calibration_contexts": 32,
+      "method": "temperature",
+      "mean": 0.0008689634810798034,
+      "std": 8.60876443643894e-06
+    },
+    {
+      "source": "controlled:scale",
+      "calibration_contexts": 32,
+      "method": "temperature+rank",
+      "mean": 0.0008750853101139585,
+      "std": 9.145966202172035e-06
+    },
+    {
+      "source": "controlled:scale",
+      "calibration_contexts": 32,
+      "method": "temperature+token-bias",
+      "mean": 0.0008812569430226034,
+      "std": 3.924759937871527e-06
+    },
+    {
+      "source": "controlled:scale",
+      "calibration_contexts": 32,
+      "method": "temperature+token-bias+PCA",
+      "mean": 0.0008941728827697532,
+      "std": 6.059144409081158e-06
+    },
+    {
+      "source": "controlled:scale",
+      "calibration_contexts": 64,
+      "method": "identity",
+      "mean": 0.05295212707143143,
+      "std": 0.0
+    },
+    {
+      "source": "controlled:scale",
+      "calibration_contexts": 64,
+      "method": "isotonic",
+      "mean": 0.0017131645765299103,
+      "std": 0.00027550538936438676
+    },
+    {
+      "source": "controlled:scale",
+      "calibration_contexts": 64,
+      "method": "temperature",
+      "mean": 0.000864392929673818,
+      "std": 2.529564936069444e-06
+    },
+    {
+      "source": "controlled:scale",
+      "calibration_contexts": 64,
+      "method": "temperature+rank",
+      "mean": 0.0008659180319188113,
+      "std": 2.7799882803253783e-06
+    },
+    {
+      "source": "controlled:scale",
+      "calibration_contexts": 64,
+      "method": "temperature+token-bias",
+      "mean": 0.0008724641980654667,
+      "std": 1.5453377838841065e-06
+    },
+    {
+      "source": "controlled:scale",
+      "calibration_contexts": 64,
+      "method": "temperature+token-bias+PCA",
+      "mean": 0.0008787439365313878,
+      "std": 3.032055882457898e-06
+    },
+    {
+      "source": "micro-lm:Q3",
+      "calibration_contexts": 2,
+      "method": "identity",
+      "mean": 0.12191928178071976,
+      "std": 0.0
+    },
+    {
+      "source": "micro-lm:Q3",
+      "calibration_contexts": 2,
+      "method": "isotonic",
+      "mean": 0.16288499534130096,
+      "std": 0.031189785759560894
+    },
+    {
+      "source": "micro-lm:Q3",
+      "calibration_contexts": 2,
+      "method": "temperature",
+      "mean": 0.11070747524499894,
+      "std": 0.01081008231073155
+    },
+    {
+      "source": "micro-lm:Q3",
+      "calibration_contexts": 2,
+      "method": "temperature+rank",
+      "mean": 0.12180020194933201,
+      "std": 0.012487615619584117
+    },
+    {
+      "source": "micro-lm:Q3",
+      "calibration_contexts": 2,
+      "method": "temperature+token-bias",
+      "mean": 0.09643115848302841,
+      "std": 0.01038683074617119
+    },
+    {
+      "source": "micro-lm:Q3",
+      "calibration_contexts": 2,
+      "method": "temperature+token-bias+PCA",
+      "mean": 0.09643115848302841,
+      "std": 0.01038683074617119
+    },
+    {
+      "source": "micro-lm:Q3",
+      "calibration_contexts": 4,
+      "method": "identity",
+      "mean": 0.12191928178071976,
+      "std": 0.0
+    },
+    {
+      "source": "micro-lm:Q3",
+      "calibration_contexts": 4,
+      "method": "isotonic",
+      "mean": 0.12473839074373246,
+      "std": 0.005639488963258944
+    },
+    {
+      "source": "micro-lm:Q3",
+      "calibration_contexts": 4,
+      "method": "temperature",
+      "mean": 0.10699986517429352,
+      "std": 0.005401037421742231
+    },
+    {
+      "source": "micro-lm:Q3",
+      "calibration_contexts": 4,
+      "method": "temperature+rank",
+      "mean": 0.10974711255037976,
+      "std": 0.006942221769958654
+    },
+    {
+      "source": "micro-lm:Q3",
+      "calibration_contexts": 4,
+      "method": "temperature+token-bias",
+      "mean": 0.08755214810371399,
+      "std": 0.005984611497702298
+    },
+    {
+      "source": "micro-lm:Q3",
+      "calibration_contexts": 4,
+      "method": "temperature+token-bias+PCA",
+      "mean": 0.09194445908069611,
+      "std": 0.003308707452563759
+    },
+    {
+      "source": "micro-lm:Q3",
+      "calibration_contexts": 8,
+      "method": "identity",
+      "mean": 0.12191928178071976,
+      "std": 0.0
+    },
+    {
+      "source": "micro-lm:Q3",
+      "calibration_contexts": 8,
+      "method": "isotonic",
+      "mean": 0.11937043517827987,
+      "std": 0.006456777981610376
+    },
+    {
+      "source": "micro-lm:Q3",
+      "calibration_contexts": 8,
+      "method": "temperature",
+      "mean": 0.1050813302397728,
+      "std": 0.0018015372826047735
+    },
+    {
+      "source": "micro-lm:Q3",
+      "calibration_contexts": 8,
+      "method": "temperature+rank",
+      "mean": 0.10634372962935648,
+      "std": 0.0016686240606998246
+    },
+    {
+      "source": "micro-lm:Q3",
+      "calibration_contexts": 8,
+      "method": "temperature+token-bias",
+      "mean": 0.07938293814659118,
+      "std": 0.003681063485121944
+    },
+    {
+      "source": "micro-lm:Q3",
+      "calibration_contexts": 8,
+      "method": "temperature+token-bias+PCA",
+      "mean": 0.0946746364235878,
+      "std": 0.008736553569608375
+    },
+    {
+      "source": "micro-lm:Q3",
+      "calibration_contexts": 16,
+      "method": "identity",
+      "mean": 0.12191928178071976,
+      "std": 0.0
+    },
+    {
+      "source": "micro-lm:Q3",
+      "calibration_contexts": 16,
+      "method": "isotonic",
+      "mean": 0.11879555583000183,
+      "std": 0.009408507846218923
+    },
+    {
+      "source": "micro-lm:Q3",
+      "calibration_contexts": 16,
+      "method": "temperature",
+      "mean": 0.10371778160333633,
+      "std": 0.00034924382479329427
+    },
+    {
+      "source": "micro-lm:Q3",
+      "calibration_contexts": 16,
+      "method": "temperature+rank",
+      "mean": 0.1045182547927331,
+      "std": 0.0006679102364142126
+    },
+    {
+      "source": "micro-lm:Q3",
+      "calibration_contexts": 16,
+      "method": "temperature+token-bias",
+      "mean": 0.07241716086864472,
+      "std": 0.002450617746047698
+    },
+    {
+      "source": "micro-lm:Q3",
+      "calibration_contexts": 16,
+      "method": "temperature+token-bias+PCA",
+      "mean": 0.07516247779130936,
+      "std": 0.0048041046136287095
+    },
+    {
+      "source": "micro-lm:Q3",
+      "calibration_contexts": 32,
+      "method": "identity",
+      "mean": 0.12191928178071976,
+      "std": 0.0
+    },
+    {
+      "source": "micro-lm:Q3",
+      "calibration_contexts": 32,
+      "method": "isotonic",
+      "mean": 0.11344958692789078,
+      "std": 0.003658475157630962
+    },
+    {
+      "source": "micro-lm:Q3",
+      "calibration_contexts": 32,
+      "method": "temperature",
+      "mean": 0.10353450775146485,
+      "std": 0.00018243486116309538
+    },
+    {
+      "source": "micro-lm:Q3",
+      "calibration_contexts": 32,
+      "method": "temperature+rank",
+      "mean": 0.10373331119499363,
+      "std": 0.0005069526010508321
+    },
+    {
+      "source": "micro-lm:Q3",
+      "calibration_contexts": 32,
+      "method": "temperature+token-bias",
+      "mean": 0.06858929246664047,
+      "std": 0.0007229184975516606
+    },
+    {
+      "source": "micro-lm:Q3",
+      "calibration_contexts": 32,
+      "method": "temperature+token-bias+PCA",
+      "mean": 0.06516527980566025,
+      "std": 0.0013787591841429821
+    },
+    {
+      "source": "micro-lm:Q3",
+      "calibration_contexts": 64,
+      "method": "identity",
+      "mean": 0.12191928178071976,
+      "std": 0.0
+    },
+    {
+      "source": "micro-lm:Q3",
+      "calibration_contexts": 64,
+      "method": "isotonic",
+      "mean": 0.10863170027732849,
+      "std": 0.0017447268615748402
+    },
+    {
+      "source": "micro-lm:Q3",
+      "calibration_contexts": 64,
+      "method": "temperature",
+      "mean": 0.10348667204380035,
+      "std": 3.173362995825406e-05
+    },
+    {
+      "source": "micro-lm:Q3",
+      "calibration_contexts": 64,
+      "method": "temperature+rank",
+      "mean": 0.10355042086397126,
+      "std": 0.00046437641661874993
+    },
+    {
+      "source": "micro-lm:Q3",
+      "calibration_contexts": 64,
+      "method": "temperature+token-bias",
+      "mean": 0.06712926775217057,
+      "std": 0.0008068714382736185
+    },
+    {
+      "source": "micro-lm:Q3",
+      "calibration_contexts": 64,
+      "method": "temperature+token-bias+PCA",
+      "mean": 0.060318127274513245,
+      "std": 0.0008889130715301979
+    },
+    {
+      "source": "micro-lm:Q3:OOD-uniform",
+      "calibration_contexts": 16,
+      "method": "identity",
+      "mean": 0.14316141605377197,
+      "std": 0.0
+    },
+    {
+      "source": "micro-lm:Q3:OOD-uniform",
+      "calibration_contexts": 16,
+      "method": "isotonic",
+      "mean": 0.14085494577884675,
+      "std": 0.0064251140964979355
+    },
+    {
+      "source": "micro-lm:Q3:OOD-uniform",
+      "calibration_contexts": 16,
+      "method": "temperature",
+      "mean": 0.12847305834293365,
+      "std": 0.0005344648940014945
+    },
+    {
+      "source": "micro-lm:Q3:OOD-uniform",
+      "calibration_contexts": 16,
+      "method": "temperature+rank",
+      "mean": 0.12963394789903568,
+      "std": 0.0012555196397953847
+    },
+    {
+      "source": "micro-lm:Q3:OOD-uniform",
+      "calibration_contexts": 16,
+      "method": "temperature+token-bias",
+      "mean": 0.10790275782346725,
+      "std": 0.0021348426055908345
+    },
+    {
+      "source": "micro-lm:Q3:OOD-uniform",
+      "calibration_contexts": 16,
+      "method": "temperature+token-bias+PCA",
+      "mean": 0.12599074244499206,
+      "std": 0.0049576302820523435
+    },
+    {
+      "source": "micro-lm:Q3:OOD-uniform",
+      "calibration_contexts": 64,
+      "method": "identity",
+      "mean": 0.14316141605377197,
+      "std": 0.0
+    },
+    {
+      "source": "micro-lm:Q3:OOD-uniform",
+      "calibration_contexts": 64,
+      "method": "isotonic",
+      "mean": 0.1335170716047287,
+      "std": 0.0017456900003968317
+    },
+    {
+      "source": "micro-lm:Q3:OOD-uniform",
+      "calibration_contexts": 64,
+      "method": "temperature",
+      "mean": 0.1282884180545807,
+      "std": 0.00015506214388154036
+    },
+    {
+      "source": "micro-lm:Q3:OOD-uniform",
+      "calibration_contexts": 64,
+      "method": "temperature+rank",
+      "mean": 0.1287267408333304,
+      "std": 0.00042254048854786276
+    },
+    {
+      "source": "micro-lm:Q3:OOD-uniform",
+      "calibration_contexts": 64,
+      "method": "temperature+token-bias",
+      "mean": 0.11391979306936265,
+      "std": 0.0012906284888289353
+    },
+    {
+      "source": "micro-lm:Q3:OOD-uniform",
+      "calibration_contexts": 64,
+      "method": "temperature+token-bias+PCA",
+      "mean": 0.10740964859724045,
+      "std": 0.001900557880388659
+    },
+    {
+      "source": "micro-lm:Q4",
+      "calibration_contexts": 2,
+      "method": "identity",
+      "mean": 0.02438368648290634,
+      "std": 0.0
+    },
+    {
+      "source": "micro-lm:Q4",
+      "calibration_contexts": 2,
+      "method": "isotonic",
+      "mean": 0.05417136587202549,
+      "std": 0.02614195274098289
+    },
+    {
+      "source": "micro-lm:Q4",
+      "calibration_contexts": 2,
+      "method": "temperature",
+      "mean": 0.02543099895119667,
+      "std": 0.0010274252507338588
+    },
+    {
+      "source": "micro-lm:Q4",
+      "calibration_contexts": 2,
+      "method": "temperature+rank",
+      "mean": 0.030936548447609357,
+      "std": 0.003923904541965306
+    },
+    {
+      "source": "micro-lm:Q4",
+      "calibration_contexts": 2,
+      "method": "temperature+token-bias",
+      "mean": 0.02126691974699497,
+      "std": 0.000852929797865978
+    },
+    {
+      "source": "micro-lm:Q4",
+      "calibration_contexts": 2,
+      "method": "temperature+token-bias+PCA",
+      "mean": 0.02126691974699497,
+      "std": 0.000852929797865978
+    },
+    {
+      "source": "micro-lm:Q4",
+      "calibration_contexts": 4,
+      "method": "identity",
+      "mean": 0.02438368648290634,
+      "std": 0.0
+    },
+    {
+      "source": "micro-lm:Q4",
+      "calibration_contexts": 4,
+      "method": "isotonic",
+      "mean": 0.05074397288262844,
+      "std": 0.020885177294361564
+    },
+    {
+      "source": "micro-lm:Q4",
+      "calibration_contexts": 4,
+      "method": "temperature",
+      "mean": 0.024405771121382713,
+      "std": 6.969838983001423e-05
+    },
+    {
+      "source": "micro-lm:Q4",
+      "calibration_contexts": 4,
+      "method": "temperature+rank",
+      "mean": 0.025420605715162713,
+      "std": 0.00022982228548535006
+    },
+    {
+      "source": "micro-lm:Q4",
+      "calibration_contexts": 4,
+      "method": "temperature+token-bias",
+      "mean": 0.01847901940345764,
+      "std": 0.0004195294190814333
+    },
+    {
+      "source": "micro-lm:Q4",
+      "calibration_contexts": 4,
+      "method": "temperature+token-bias+PCA",
+      "mean": 0.019426090642809868,
+      "std": 0.0008029174231499233
+    },
+    {
+      "source": "micro-lm:Q4",
+      "calibration_contexts": 8,
+      "method": "identity",
+      "mean": 0.02438368648290634,
+      "std": 0.0
+    },
+    {
+      "source": "micro-lm:Q4",
+      "calibration_contexts": 8,
+      "method": "isotonic",
+      "mean": 0.03935152664780617,
+      "std": 0.010675633425069274
+    },
+    {
+      "source": "micro-lm:Q4",
+      "calibration_contexts": 8,
+      "method": "temperature",
+      "mean": 0.024345718696713446,
+      "std": 3.410088510481684e-05
+    },
+    {
+      "source": "micro-lm:Q4",
+      "calibration_contexts": 8,
+      "method": "temperature+rank",
+      "mean": 0.024743937613248435,
+      "std": 0.00022251656056343993
+    },
+    {
+      "source": "micro-lm:Q4",
+      "calibration_contexts": 8,
+      "method": "temperature+token-bias",
+      "mean": 0.016141798347234726,
+      "std": 0.000364418560356857
+    },
+    {
+      "source": "micro-lm:Q4",
+      "calibration_contexts": 8,
+      "method": "temperature+token-bias+PCA",
+      "mean": 0.018437238410115242,
+      "std": 0.0008862257922563112
+    },
+    {
+      "source": "micro-lm:Q4",
+      "calibration_contexts": 16,
+      "method": "identity",
+      "mean": 0.02438368648290634,
+      "std": 0.0
+    },
+    {
+      "source": "micro-lm:Q4",
+      "calibration_contexts": 16,
+      "method": "isotonic",
+      "mean": 0.034610559791326524,
+      "std": 0.007706673439538487
+    },
+    {
+      "source": "micro-lm:Q4",
+      "calibration_contexts": 16,
+      "method": "temperature",
+      "mean": 0.024447017535567283,
+      "std": 0.00020590378361382708
+    },
+    {
+      "source": "micro-lm:Q4",
+      "calibration_contexts": 16,
+      "method": "temperature+rank",
+      "mean": 0.024783917051810562,
+      "std": 0.00034624090839888535
+    },
+    {
+      "source": "micro-lm:Q4",
+      "calibration_contexts": 16,
+      "method": "temperature+token-bias",
+      "mean": 0.014895000495016575,
+      "std": 0.00042671659524266847
+    },
+    {
+      "source": "micro-lm:Q4",
+      "calibration_contexts": 16,
+      "method": "temperature+token-bias+PCA",
+      "mean": 0.01572369672358036,
+      "std": 0.0006572186040615495
+    },
+    {
+      "source": "micro-lm:Q4",
+      "calibration_contexts": 32,
+      "method": "identity",
+      "mean": 0.02438368648290634,
+      "std": 0.0
+    },
+    {
+      "source": "micro-lm:Q4",
+      "calibration_contexts": 32,
+      "method": "isotonic",
+      "mean": 0.03321506679058075,
+      "std": 0.006722825583377395
+    },
+    {
+      "source": "micro-lm:Q4",
+      "calibration_contexts": 32,
+      "method": "temperature",
+      "mean": 0.02443825118243694,
+      "std": 0.00011709943871640871
+    },
+    {
+      "source": "micro-lm:Q4",
+      "calibration_contexts": 32,
+      "method": "temperature+rank",
+      "mean": 0.024725118150840525,
+      "std": 0.00014551057926250985
+    },
+    {
+      "source": "micro-lm:Q4",
+      "calibration_contexts": 32,
+      "method": "temperature+token-bias",
+      "mean": 0.013919677585363388,
+      "std": 0.00019434921104488276
+    },
+    {
+      "source": "micro-lm:Q4",
+      "calibration_contexts": 32,
+      "method": "temperature+token-bias+PCA",
+      "mean": 0.014015532843768597,
+      "std": 0.0002795450955337654
+    },
+    {
+      "source": "micro-lm:Q4",
+      "calibration_contexts": 64,
+      "method": "identity",
+      "mean": 0.02438368648290634,
+      "std": 0.0
+    },
+    {
+      "source": "micro-lm:Q4",
+      "calibration_contexts": 64,
+      "method": "isotonic",
+      "mean": 0.02615283988416195,
+      "std": 0.00023043281278146678
+    },
+    {
+      "source": "micro-lm:Q4",
+      "calibration_contexts": 64,
+      "method": "temperature",
+      "mean": 0.024337317422032358,
+      "std": 2.6646615699156673e-05
+    },
+    {
+      "source": "micro-lm:Q4",
+      "calibration_contexts": 64,
+      "method": "temperature+rank",
+      "mean": 0.024377187497918305,
+      "std": 3.071630835585903e-05
+    },
+    {
+      "source": "micro-lm:Q4",
+      "calibration_contexts": 64,
+      "method": "temperature+token-bias",
+      "mean": 0.01352984718978405,
+      "std": 9.958498585363599e-05
+    },
+    {
+      "source": "micro-lm:Q4",
+      "calibration_contexts": 64,
+      "method": "temperature+token-bias+PCA",
+      "mean": 0.013072400912642479,
+      "std": 0.0002590945049132327
+    },
+    {
+      "source": "micro-lm:Q4:OOD-uniform",
+      "calibration_contexts": 16,
+      "method": "identity",
+      "mean": 0.025701766833662987,
+      "std": 0.0
+    },
+    {
+      "source": "micro-lm:Q4:OOD-uniform",
+      "calibration_contexts": 16,
+      "method": "isotonic",
+      "mean": 0.03644173666834831,
+      "std": 0.0061226613590288385
+    },
+    {
+      "source": "micro-lm:Q4:OOD-uniform",
+      "calibration_contexts": 16,
+      "method": "temperature",
+      "mean": 0.025690286606550216,
+      "std": 0.0007313727864393855
+    },
+    {
+      "source": "micro-lm:Q4:OOD-uniform",
+      "calibration_contexts": 16,
+      "method": "temperature+rank",
+      "mean": 0.026423562802725564,
+      "std": 0.0007324023738229039
+    },
+    {
+      "source": "micro-lm:Q4:OOD-uniform",
+      "calibration_contexts": 16,
+      "method": "temperature+token-bias",
+      "mean": 0.019816530123353004,
+      "std": 0.0008646663727319725
+    },
+    {
+      "source": "micro-lm:Q4:OOD-uniform",
+      "calibration_contexts": 16,
+      "method": "temperature+token-bias+PCA",
+      "mean": 0.02432410791516304,
+      "std": 0.001763095467998815
+    },
+    {
+      "source": "micro-lm:Q4:OOD-uniform",
+      "calibration_contexts": 64,
+      "method": "identity",
+      "mean": 0.025701766833662987,
+      "std": 0.0
+    },
+    {
+      "source": "micro-lm:Q4:OOD-uniform",
+      "calibration_contexts": 64,
+      "method": "isotonic",
+      "mean": 0.02773628495633602,
+      "std": 0.0002962401851252133
+    },
+    {
+      "source": "micro-lm:Q4:OOD-uniform",
+      "calibration_contexts": 64,
+      "method": "temperature",
+      "mean": 0.025382613763213158,
+      "std": 9.18251812613506e-05
+    },
+    {
+      "source": "micro-lm:Q4:OOD-uniform",
+      "calibration_contexts": 64,
+      "method": "temperature+rank",
+      "mean": 0.025627017708593373,
+      "std": 0.00022333238960481303
+    },
+    {
+      "source": "micro-lm:Q4:OOD-uniform",
+      "calibration_contexts": 64,
+      "method": "temperature+token-bias",
+      "mean": 0.018790340051054955,
+      "std": 0.00012542318449935752
+    },
+    {
+      "source": "micro-lm:Q4:OOD-uniform",
+      "calibration_contexts": 64,
+      "method": "temperature+token-bias+PCA",
+      "mean": 0.02061046175658703,
+      "std": 0.0005965037238505221
+    }
+  ],
+  "sampler_summary": [
+    {
+      "source": "controlled:mixed",
+      "calibration_contexts": 16,
+      "method": "same T,p",
+      "js": 0.05591800720802074,
+      "tv": 0.24164358589141183
+    },
+    {
+      "source": "controlled:mixed",
+      "calibration_contexts": 16,
+      "method": "temperature+rank",
+      "js": 0.038603286362201,
+      "tv": 0.1956816387480275
+    },
+    {
+      "source": "controlled:mixed",
+      "calibration_contexts": 16,
+      "method": "temperature+token-bias+PCA",
+      "js": 0.006748125843551137,
+      "tv": 0.0713648861213497
+    },
+    {
+      "source": "controlled:mixed",
+      "calibration_contexts": 16,
+      "method": "tuned T",
+      "js": 0.03821969134592493,
+      "tv": 0.1950986301873258
+    },
+    {
+      "source": "controlled:mixed",
+      "calibration_contexts": 16,
+      "method": "tuned T,p",
+      "js": 0.0379220850747931,
+      "tv": 0.19523256190407864
+    },
+    {
+      "source": "controlled:mixed",
+      "calibration_contexts": 64,
+      "method": "same T,p",
+      "js": 0.05591800720802074,
+      "tv": 0.24164358589141183
+    },
+    {
+      "source": "controlled:mixed",
+      "calibration_contexts": 64,
+      "method": "temperature+rank",
+      "js": 0.03817310318727683,
+      "tv": 0.19419810985155256
+    },
+    {
+      "source": "controlled:mixed",
+      "calibration_contexts": 64,
+      "method": "temperature+token-bias+PCA",
+      "js": 0.004816866962098398,
+      "tv": 0.05775015899091459
+    },
+    {
+      "source": "controlled:mixed",
+      "calibration_contexts": 64,
+      "method": "tuned T",
+      "js": 0.03821969134592493,
+      "tv": 0.1950986301873258
+    },
+    {
+      "source": "controlled:mixed",
+      "calibration_contexts": 64,
+      "method": "tuned T,p",
+      "js": 0.03790096546791808,
+      "tv": 0.19513201079453482
+    },
+    {
+      "source": "controlled:scale",
+      "calibration_contexts": 16,
+      "method": "same T,p",
+      "js": 0.033742263988308305,
+      "tv": 0.1668316548003529
+    },
+    {
+      "source": "controlled:scale",
+      "calibration_contexts": 16,
+      "method": "temperature+rank",
+      "js": 0.0012209250484891646,
+      "tv": 0.021106364471794252
+    },
+    {
+      "source": "controlled:scale",
+      "calibration_contexts": 16,
+      "method": "temperature+token-bias+PCA",
+      "js": 0.0012534685065334894,
+      "tv": 0.02152471889709339
+    },
+    {
+      "source": "controlled:scale",
+      "calibration_contexts": 16,
+      "method": "tuned T",
+      "js": 0.0014857969128881652,
+      "tv": 0.02245161536415662
+    },
+    {
+      "source": "controlled:scale",
+      "calibration_contexts": 16,
+      "method": "tuned T,p",
+      "js": 0.0014857969128881652,
+      "tv": 0.02245161536415662
+    },
+    {
+      "source": "controlled:scale",
+      "calibration_contexts": 64,
+      "method": "same T,p",
+      "js": 0.033742263988308305,
+      "tv": 0.1668316548003529
+    },
+    {
+      "source": "controlled:scale",
+      "calibration_contexts": 64,
+      "method": "temperature+rank",
+      "js": 0.0012073516755136762,
+      "tv": 0.020892404933024845
+    },
+    {
+      "source": "controlled:scale",
+      "calibration_contexts": 64,
+      "method": "temperature+token-bias+PCA",
+      "js": 0.0012159200792474702,
+      "tv": 0.021004338259845923
+    },
+    {
+      "source": "controlled:scale",
+      "calibration_contexts": 64,
+      "method": "tuned T",
+      "js": 0.0014857969128881652,
+      "tv": 0.02245161536415662
+    },
+    {
+      "source": "controlled:scale",
+      "calibration_contexts": 64,
+      "method": "tuned T,p",
+      "js": 0.0014857969128881652,
+      "tv": 0.02245161536415662
+    },
+    {
+      "source": "micro-lm:Q3",
+      "calibration_contexts": 16,
+      "method": "same T,p",
+      "js": 0.04901972413063049,
+      "tv": 0.20896124839782715
+    },
+    {
+      "source": "micro-lm:Q3",
+      "calibration_contexts": 16,
+      "method": "temperature+rank",
+      "js": 0.045675662217444526,
+      "tv": 0.20037302917566285
+    },
+    {
+      "source": "micro-lm:Q3",
+      "calibration_contexts": 16,
+      "method": "temperature+token-bias+PCA",
+      "js": 0.03388367667794227,
+      "tv": 0.17229242026805877
+    },
+    {
+      "source": "micro-lm:Q3",
+      "calibration_contexts": 16,
+      "method": "tuned T",
+      "js": 0.04422014132142067,
+      "tv": 0.1958186775445938
+    },
+    {
+      "source": "micro-lm:Q3",
+      "calibration_contexts": 16,
+      "method": "tuned T,p",
+      "js": 0.0444428950548172,
+      "tv": 0.19563954472541809
+    },
+    {
+      "source": "micro-lm:Q3",
+      "calibration_contexts": 64,
+      "method": "same T,p",
+      "js": 0.04901972413063049,
+      "tv": 0.20896124839782715
+    },
+    {
+      "source": "micro-lm:Q3",
+      "calibration_contexts": 64,
+      "method": "temperature+rank",
+      "js": 0.04460238524464105,
+      "tv": 0.19677068876728257
+    },
+    {
+      "source": "micro-lm:Q3",
+      "calibration_contexts": 64,
+      "method": "temperature+token-bias+PCA",
+      "js": 0.028286948427557947,
+      "tv": 0.15507260262966155
+    },
+    {
+      "source": "micro-lm:Q3",
+      "calibration_contexts": 64,
+      "method": "tuned T",
+      "js": 0.04422014132142067,
+      "tv": 0.1958186775445938
+    },
+    {
+      "source": "micro-lm:Q3",
+      "calibration_contexts": 64,
+      "method": "tuned T,p",
+      "js": 0.04424089938402176,
+      "tv": 0.19619819521903992
+    },
+    {
+      "source": "micro-lm:Q4",
+      "calibration_contexts": 16,
+      "method": "same T,p",
+      "js": 0.013446790166199207,
+      "tv": 0.10412465035915375
+    },
+    {
+      "source": "micro-lm:Q4",
+      "calibration_contexts": 16,
+      "method": "temperature+rank",
+      "js": 0.014120009522384697,
+      "tv": 0.10795858555939863
+    },
+    {
+      "source": "micro-lm:Q4",
+      "calibration_contexts": 16,
+      "method": "temperature+token-bias+PCA",
+      "js": 0.009733465686440467,
+      "tv": 0.08369406759738922
+    },
+    {
+      "source": "micro-lm:Q4",
+      "calibration_contexts": 16,
+      "method": "tuned T",
+      "js": 0.013754204288125038,
+      "tv": 0.10492281764745712
+    },
+    {
+      "source": "micro-lm:Q4",
+      "calibration_contexts": 16,
+      "method": "tuned T,p",
+      "js": 0.014041626267135144,
+      "tv": 0.10660512000322342
+    },
+    {
+      "source": "micro-lm:Q4",
+      "calibration_contexts": 64,
+      "method": "same T,p",
+      "js": 0.013446790166199207,
+      "tv": 0.10412465035915375
+    },
+    {
+      "source": "micro-lm:Q4",
+      "calibration_contexts": 64,
+      "method": "temperature+rank",
+      "js": 0.013569965170910095,
+      "tv": 0.10430275584729312
+    },
+    {
+      "source": "micro-lm:Q4",
+      "calibration_contexts": 64,
+      "method": "temperature+token-bias+PCA",
+      "js": 0.008336760103702545,
+      "tv": 0.07598496079444886
+    },
+    {
+      "source": "micro-lm:Q4",
+      "calibration_contexts": 64,
+      "method": "tuned T",
+      "js": 0.013549261540174485,
+      "tv": 0.10439070612192154
+    },
+    {
+      "source": "micro-lm:Q4",
+      "calibration_contexts": 64,
+      "method": "tuned T,p",
+      "js": 0.013552367314696312,
+      "tv": 0.1043151706457138
+    }
+  ],
+  "temperature_transfer_summary": [
+    {
+      "source": "controlled:mixed",
+      "sampling_temperature": 0.55,
+      "method": "identity",
+      "kl": 0.2673914194899721,
+      "js": 0.06468124010343293,
+      "tv": 0.280059515485468
+    },
+    {
+      "source": "controlled:mixed",
+      "sampling_temperature": 0.55,
+      "method": "temperature",
+      "kl": 0.22297340020238096,
+      "js": 0.05146795989761741,
+      "tv": 0.23823085816516326
+    },
+    {
+      "source": "controlled:mixed",
+      "sampling_temperature": 0.55,
+      "method": "temperature+token-bias",
+      "kl": 0.19230926701902198,
+      "js": 0.044212741294024624,
+      "tv": 0.2170313856547542
+    },
+    {
+      "source": "controlled:mixed",
+      "sampling_temperature": 0.55,
+      "method": "temperature+token-bias+PCA",
+      "kl": 0.015776210873162878,
+      "js": 0.003950242082378736,
+      "tv": 0.06611295222724885
+    },
+    {
+      "source": "controlled:mixed",
+      "sampling_temperature": 0.8,
+      "method": "identity",
+      "kl": 0.16831968537951186,
+      "js": 0.040498747991857736,
+      "tv": 0.22921572195294676
+    },
+    {
+      "source": "controlled:mixed",
+      "sampling_temperature": 0.8,
+      "method": "temperature",
+      "kl": 0.12355904641327305,
+      "js": 0.02947626130532912,
+      "tv": 0.18566330050733765
+    },
+    {
+      "source": "controlled:mixed",
+      "sampling_temperature": 0.8,
+      "method": "temperature+token-bias",
+      "kl": 0.10752190328375619,
+      "js": 0.025652462069009768,
+      "tv": 0.1707370077957422
+    },
+    {
+      "source": "controlled:mixed",
+      "sampling_temperature": 0.8,
+      "method": "temperature+token-bias+PCA",
+      "kl": 0.009159379073425556,
+      "js": 0.00228625177087429,
+      "tv": 0.05303549918796441
+    },
+    {
+      "source": "controlled:mixed",
+      "sampling_temperature": 1.0,
+      "method": "identity",
+      "kl": 0.11000849709732845,
+      "js": 0.02642256305244427,
+      "tv": 0.18353064011581527
+    },
+    {
+      "source": "controlled:mixed",
+      "sampling_temperature": 1.0,
+      "method": "temperature",
+      "kl": 0.08059703841565433,
+      "js": 0.01948627330995222,
+      "tv": 0.15100991353817883
+    },
+    {
+      "source": "controlled:mixed",
+      "sampling_temperature": 1.0,
+      "method": "temperature+token-bias",
+      "kl": 0.07069611579149963,
+      "js": 0.017118329299972708,
+      "tv": 0.13940226406138828
+    },
+    {
+      "source": "controlled:mixed",
+      "sampling_temperature": 1.0,
+      "method": "temperature+token-bias+PCA",
+      "kl": 0.005959349546316305,
+      "js": 0.0014860320702787281,
+      "tv": 0.04290894835153762
+    },
+    {
+      "source": "controlled:mixed",
+      "sampling_temperature": 1.3,
+      "method": "identity",
+      "kl": 0.0611886378725703,
+      "js": 0.014798281419993908,
+      "tv": 0.13490604964500663
+    },
+    {
+      "source": "controlled:mixed",
+      "sampling_temperature": 1.3,
+      "method": "temperature",
+      "kl": 0.0472105694793253,
+      "js": 0.011552786309911346,
+      "tv": 0.1158358931230767
+    },
+    {
+      "source": "controlled:mixed",
+      "sampling_temperature": 1.3,
+      "method": "temperature+token-bias",
+      "kl": 0.041742078401726085,
+      "js": 0.010232943331555314,
+      "tv": 0.10719446106458297
+    },
+    {
+      "source": "controlled:mixed",
+      "sampling_temperature": 1.3,
+      "method": "temperature+token-bias+PCA",
+      "kl": 0.003425550067119874,
+      "js": 0.0008544191461697431,
+      "tv": 0.03240107189464973
+    },
+    {
+      "source": "micro-lm:Q3",
+      "sampling_temperature": 0.55,
+      "method": "identity",
+      "kl": 0.24443744122982025,
+      "js": 0.0512528158724308,
+      "tv": 0.21966910362243652
+    },
+    {
+      "source": "micro-lm:Q3",
+      "sampling_temperature": 0.55,
+      "method": "temperature",
+      "kl": 0.2070729613304138,
+      "js": 0.04669104814529419,
+      "tv": 0.2102196455001831
+    },
+    {
+      "source": "micro-lm:Q3",
+      "sampling_temperature": 0.55,
+      "method": "temperature+token-bias",
+      "kl": 0.1458014577627182,
+      "js": 0.03384284377098083,
+      "tv": 0.18420465290546417
+    },
+    {
+      "source": "micro-lm:Q3",
+      "sampling_temperature": 0.55,
+      "method": "temperature+token-bias+PCA",
+      "kl": 0.13203544318675994,
+      "js": 0.030833936110138894,
+      "tv": 0.17349224984645845
+    },
+    {
+      "source": "micro-lm:Q3",
+      "sampling_temperature": 0.8,
+      "method": "identity",
+      "kl": 0.16311593353748322,
+      "js": 0.03670452535152435,
+      "tv": 0.20009468495845795
+    },
+    {
+      "source": "micro-lm:Q3",
+      "sampling_temperature": 0.8,
+      "method": "temperature",
+      "kl": 0.13729364275932313,
+      "js": 0.0326514907181263,
+      "tv": 0.18714637458324432
+    },
+    {
+      "source": "micro-lm:Q3",
+      "sampling_temperature": 0.8,
+      "method": "temperature+token-bias",
+      "kl": 0.09226612448692321,
+      "js": 0.022257886454463006,
+      "tv": 0.15865067541599273
+    },
+    {
+      "source": "micro-lm:Q3",
+      "sampling_temperature": 0.8,
+      "method": "temperature+token-bias+PCA",
+      "kl": 0.08382525593042374,
+      "js": 0.02027701064944267,
+      "tv": 0.1500287503004074
+    },
+    {
+      "source": "micro-lm:Q3",
+      "sampling_temperature": 1.0,
+      "method": "identity",
+      "kl": 0.12191928178071976,
+      "js": 0.02834969013929367,
+      "tv": 0.18185050785541534
+    },
+    {
+      "source": "micro-lm:Q3",
+      "sampling_temperature": 1.0,
+      "method": "temperature",
+      "kl": 0.10350214540958405,
+      "js": 0.0250898789614439,
+      "tv": 0.16847544014453888
+    },
+    {
+      "source": "micro-lm:Q3",
+      "sampling_temperature": 1.0,
+      "method": "temperature+token-bias",
+      "kl": 0.06772182136774063,
+      "js": 0.016557126864790918,
+      "tv": 0.13987713754177095
+    },
+    {
+      "source": "micro-lm:Q3",
+      "sampling_temperature": 1.0,
+      "method": "temperature+token-bias+PCA",
+      "kl": 0.06130138114094734,
+      "js": 0.015010076947510243,
+      "tv": 0.13222187757492065
+    },
+    {
+      "source": "micro-lm:Q3",
+      "sampling_temperature": 1.3,
+      "method": "identity",
+      "kl": 0.08147113025188446,
+      "js": 0.01949470117688179,
+      "tv": 0.15426088869571686
+    },
+    {
+      "source": "micro-lm:Q3",
+      "sampling_temperature": 1.3,
+      "method": "temperature",
+      "kl": 0.07062064260244369,
+      "js": 0.01735009588301182,
+      "tv": 0.14299506545066834
+    },
+    {
+      "source": "micro-lm:Q3",
+      "sampling_temperature": 1.3,
+      "method": "temperature+token-bias",
+      "kl": 0.045106077939271925,
+      "js": 0.011131689883768559,
+      "tv": 0.1163538858294487
+    },
+    {
+      "source": "micro-lm:Q3",
+      "sampling_temperature": 1.3,
+      "method": "temperature+token-bias+PCA",
+      "kl": 0.040528586506843566,
+      "js": 0.010009626485407352,
+      "tv": 0.10967862010002136
+    }
+  ],
+  "runtime_seconds": 55.17699122428894
+}
