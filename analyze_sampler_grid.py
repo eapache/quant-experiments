@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Cross-validate ordinary temperature/top-p compensation against a Q8 sampler."""
+"""Cross-validate ordinary temperature/top-p compensation against a reference sampler."""
 
 from __future__ import annotations
 
@@ -158,14 +158,14 @@ def analyze_quant(reference_path: Path, candidate_path: Path, name: str, folds: 
     return output
 
 
-def write_report(path: Path, rows: list[dict]) -> None:
+def write_report(path: Path, rows: list[dict], reference_label: str) -> None:
     calibration_positions = sorted({int(row["calibration_positions"]) for row in rows})
     calibration_text = ", ".join(map(str, calibration_positions))
     lines = [
         "# Held-out ordinary sampler compensation",
         "",
         f"For each outer fold, {calibration_text} evenly spaced positions from the other chunks tune only",
-        "the candidate quant's temperature and top-p. The target is the Q8 distribution at",
+        f"the candidate quant's temperature and top-p. The target is the {reference_label} distribution at",
         "T=0.8/top-p=0.95. All reported divergences are on complete held-out chunk blocks.",
         "",
         "| Quant | Method | JS | Recovered | TV | Support Jaccard | Candidate T | Candidate top-p |",
@@ -195,8 +195,10 @@ def write_report(path: Path, rows: list[dict]) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--reference", type=Path, required=True)
-    parser.add_argument("--q4", type=Path, required=True)
-    parser.add_argument("--q2", type=Path, required=True)
+    parser.add_argument("--q8", type=Path)
+    parser.add_argument("--q4", type=Path)
+    parser.add_argument("--q2", type=Path)
+    parser.add_argument("--reference-label", default="Q8")
     parser.add_argument("--folds", type=int, default=4)
     parser.add_argument("--calibration-positions", type=int, default=256)
     parser.add_argument("--reference-temperature", type=float, default=0.8)
@@ -204,7 +206,11 @@ def main() -> None:
     parser.add_argument("--jobs", type=int, default=2)
     parser.add_argument("--output-dir", type=Path, default=Path("results/gpu32"))
     args = parser.parse_args()
-    jobs = (("Q4_K_XL", args.q4), ("Q2_K_XL", args.q2))
+    jobs = tuple((name, path) for name, path in (
+        ("Q8_K_XL", args.q8), ("Q4_K_XL", args.q4), ("Q2_K_XL", args.q2)
+    ) if path is not None)
+    if not jobs:
+        parser.error("at least one of --q8, --q4, or --q2 is required")
     rows = []
     with concurrent.futures.ProcessPoolExecutor(max_workers=args.jobs) as executor:
         futures = [executor.submit(
@@ -221,7 +227,7 @@ def main() -> None:
         writer = csv.DictWriter(stream, fieldnames=list(rows[0]))
         writer.writeheader()
         writer.writerows(rows)
-    write_report(args.output_dir / "SAMPLER.md", rows)
+    write_report(args.output_dir / "SAMPLER.md", rows, args.reference_label)
     print(f"wrote {args.output_dir / 'SAMPLER.md'}")
 
 

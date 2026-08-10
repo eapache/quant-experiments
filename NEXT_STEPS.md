@@ -2,19 +2,20 @@
 
 ## Scope of the current evidence
 
-The completed real-model experiments mainly tested the low-complexity end of the proposed
-quantization-compensation hierarchy:
+The completed real-model experiments test both the low-complexity end of the proposed
+quantization-compensation hierarchy and one higher-capacity residual model:
 
 - global temperature and top-p tuning;
 - quant-logit-gap bucket corrections;
 - a shrunken static per-token logit bias;
 - entropy-conditioned token biases as a crude context-adaptive correction.
+- a nested, head-restricted low-rank denoiser with oracle and quant-only amplitudes.
 
-These methods recovered only a few percent of divergence toward Q8. That result does
-**not** rule out the more expressive methods discussed in `chats/first.txt`. The following
-ideas remain untested on real GGUF logits.
+Deployable methods recovered only a few percent of divergence toward BF16. The low-rank
+oracle recovered much more, but its quant-only predictor did not. The following ideas
+remain untested on real GGUF logits.
 
-## Priority 1: predictive low-rank logit denoiser
+## Completed: predictive low-rank logit denoiser
 
 Fit a real-model version of
 
@@ -33,17 +34,21 @@ Protocol:
 5. At validation time, never use reference logits to choose amplitudes. Report an oracle
    projection separately only as an upper bound.
 6. Select the number of directions and regularization through inner chunk-level
-   validation, then report performance on untouched outer chunks and the code corpus.
+   validation, then report performance on untouched outer chunks. Proceed to the code
+   corpus only if the predicted model beats static token bias.
 
-The key diagnostic is the gap between:
+This experiment is now implemented in `analyze_low_rank.py` and evaluated against BF16.
+The key diagnostic gap is:
 
 - oracle residual projection;
 - quant-only predicted projection;
 - static token bias.
 
-If the oracle projection is strong but prediction is weak, useful residual structure
-exists but is not inferable at sampling time. If even the oracle is weak, low-rank output
-directions are not a promising representation for this quant.
+The 16-direction oracle recovers 57.09% of Q2 KL and raises top-1 agreement from 77.3% to
+94.4%. The nested quant-only predictor recovers only 1.44%, below the 1.65% static-bias
+baseline; inner validation selects zero directions in three of four folds. Useful residual
+structure exists, but its amplitudes are not inferable from the tested entropy, margin,
+mass, and basis-projection features. See `results/bf16_low_rank_q2/LOW_RANK.md`.
 
 ## Priority 2: cumulative-mass calibration
 
@@ -53,7 +58,7 @@ context-dependent mapping between candidate and reference cumulative mass.
 For each calibration position:
 
 1. Sort tokens by the quantized logits.
-2. Measure how much Q8 probability mass is covered as quantized cumulative mass grows.
+2. Measure how much BF16 probability mass is covered as quantized cumulative mass grows.
 3. Fit a small monotonic mapping conditioned on quant-only statistics, for example:
 
 ```text
@@ -69,7 +74,7 @@ mass-regression error.
 
 ## Priority 3: uncertainty-aware posterior sampler
 
-Treat quantized candidate gaps as noisy observations of latent Q8 gaps. Estimate error
+Treat quantized candidate gaps as noisy observations of latent BF16 gaps. Estimate error
 distributions from paired calibration data as a function of quant-only state:
 
 ```text
@@ -132,8 +137,10 @@ All advanced experiments should retain the safeguards established by the current
 
 ## Recommended next decisive experiment
 
-Implement the predictive low-rank denoiser first, using the existing 32-chunk CUDA
-captures. It directly tests the main untried Heretic-like hypothesis without requiring
-new inference. Begin with an oracle upper bound and probability-weighted SVD; proceed to
-a quant-only amplitude predictor only if that upper bound materially exceeds the static
-token-bias result.
+Test the uncertainty-aware posterior sampler over the top 32-128 Q2 candidates. The
+low-rank oracle shows that head errors contain substantial correctable structure, while
+the deterministic feature-to-amplitude predictor fails. Estimate rank-, gap-, and
+entropy-conditioned residual distributions on inner calibration chunks, then compare a
+posterior-predictive softmax against a deterministic conditional-mean correction on
+untouched outer chunks. This directly tests whether acknowledging uncertain rank flips is
+more useful than trying to guess one exact residual vector.

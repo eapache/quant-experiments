@@ -36,17 +36,19 @@ It explicitly identified aligned real GGUFs as the missing decisive experiment.
 - CPU: AMD Ryzen 9 9900X, 12 physical / 24 logical cores
 - RAM: 60 GiB
 - models, all from the same Qwen3.5-4B family:
+  - `Qwen3.5-4B-BF16.gguf` (8,424,393,632 bytes; added for the latest round)
   - `Qwen3.5-4B-UD-Q8_K_XL.gguf` (5,952,048,288 bytes)
   - `Qwen3.5-4B-UD-Q4_K_XL.gguf` (2,912,109,728 bytes)
   - `Qwen3.5-4B-UD-Q2_K_XL.gguf` (1,940,825,248 bytes)
 
-Only Q8, Q4, and Q2 are available. Q8 is therefore the experimental reference, not a
-claim of BF16 ground truth. Conclusions must be phrased as recovery toward Q8.
+The first round had only Q8, Q4, and Q2, so it used Q8 as its experimental reference.
+The latest round uses the subsequently added original BF16 GGUF as the reference.
 
 Model SHA-256 hashes:
 
 | File | SHA-256 |
 |---|---|
+| BF16 | `9e6e2841a75f503ccb330831832fd7861266e187e0dbf149a954219ccb8c197a` |
 | Q8_K_XL | `e786a3c6570474c3885199bfb5adc54325aa7521a314e10b0aaefe16a54ba42f` |
 | Q4_K_XL | `b252c5610a42ca82d20fe2a12813e9d069eed89292907e26c783eeb0bc961bc7` |
 | Q2_K_XL | `79aa0b583c888976013002f66b9f617070d91cf8de6a09dc775983640ac59463` |
@@ -307,3 +309,96 @@ matching, and correctly recommends no change for Q4. The effect is only 2-3%. Ne
 ordinary samplers nor the tested token/gap/entropy corrections invert most of Q2's
 quantization damage. The dominant residual is token-specific ranking noise not predictable
 from the quantized output distribution by these low-capacity transforms.
+
+### BF16 reference round
+
+The original `Qwen3.5-4B-BF16.gguf` became available on 2026-08-10. Matching CUDA0
+captures were generated for the 32-chunk prose and code corpora, changing the prior
+extraction command's model and output to `bf16-32.kld` and `bf16-code32.kld`. Each capture
+is 955 MiB. The BF16 file's SHA-256 is recorded above.
+
+The established sparse and sampler analyses were generalized to label the reference and
+include Q8 as a candidate:
+
+```bash
+python3 analyze_sparse.py \
+  --reference results/logits/bf16-32.kld --reference-label BF16 \
+  --q8 results/logits/q8-32.kld --q4 results/logits/q4-32.kld \
+  --q2 results/logits/q2-32.kld --jobs 3 --output-dir results/bf16_gpu32
+
+python3 analyze_sampler_grid.py \
+  --reference results/logits/bf16-32.kld --reference-label BF16 \
+  --q8 results/logits/q8-32.kld --q4 results/logits/q4-32.kld \
+  --q2 results/logits/q2-32.kld --jobs 3 --output-dir results/bf16_gpu32
+```
+
+At T=1 and 1,512 calibration positions:
+
+| Candidate | Raw KL to BF16 | Temp + token KL | Recovered | Top-1 agreement |
+|---|---:|---:|---:|---:|
+| Q8_K_XL | 0.0010029 | 0.0010081 | -0.51% | 98.1% |
+| Q4_K_XL | 0.0165486 | 0.0160727 | 2.88% | 94.1% |
+| Q2_K_XL | 0.2214713 | 0.2178065 | 1.65% | 77.8% |
+
+The BF16 sampler target at T=0.8/top-p=0.95 produced:
+
+| Candidate | Method | Mean candidate setting | Held-out JS | Recovered |
+|---|---|---|---:|---:|
+| Q8_K_XL | same settings | T=0.8000, p=0.9500 | 0.0008728 | 0% |
+| Q4_K_XL | tuned T | T=0.7950, p=0.9500 | 0.0072793 | -0.14% |
+| Q2_K_XL | tuned T | T=0.7625, p=0.9500 | 0.0648402 | 2.22% |
+| Q2_K_XL | tuned jointly | T=0.7288, p=0.9650 | 0.0645550 | 2.65% |
+
+This reproduces the earlier Q8-relative practical conclusion against the proper BF16
+target. Q8 requires no sampler adjustment. The Q2 temperature shift is not an artifact
+of using Q8 as teacher.
+
+Settings were loaded directly from `results/bf16_gpu32/sampler_grid.csv`, frozen, and
+evaluated on the independent code capture:
+
+```bash
+python3 evaluate_frozen_sampler.py \
+  --reference results/logits/bf16-code32.kld --reference-label BF16 \
+  --settings-csv results/bf16_gpu32/sampler_grid.csv \
+  --q8 results/logits/q8-code32.kld --q4 results/logits/q4-code32.kld \
+  --q2 results/logits/q2-code32.kld --output-dir results/bf16_ood_code
+```
+
+Q2 T=0.7625 reduced mean JS by 0.0004071 (0.79%), with a per-chunk normal 95%
+interval [0.0000637, 0.0007504]. The frozen joint setting reduced JS by 0.0006456
+(1.26%), interval [0.0002661, 0.0010251]. Q2 top-p alone again reversed sign. Q4's
+intervals include zero, and Q8's settings remain identical to the target settings.
+
+### Predictive low-rank Q2 denoiser
+
+`analyze_low_rank.py` implements the priority experiment from `NEXT_STEPS.md`. It learns
+SVD directions on the union of the reference and candidate top-128 tokens after fitting
+temperature and static token bias. Four outer folds hold out eight complete chunks each.
+Within each outer training set, a separate six-chunk validation split selects 0, 1, 2, 4,
+8, or 16 directions and ridge alpha. The predictor sees only candidate entropy,
+probability mass, margins, and projections onto learned directions. Oracle amplitudes
+minimize actual KL on each held-out reference row with a damped Newton solve and are
+reported only as an unattainable diagnostic.
+
+```bash
+python3 analyze_low_rank.py \
+  --reference results/logits/bf16-32.kld \
+  --candidate results/logits/q2-32.kld --candidate-name Q2_K_XL \
+  --reference-label BF16 --output-dir results/bf16_low_rank_q2
+```
+
+| Method | Held-out KL | Recovered | Top-1 agreement |
+|---|---:|---:|---:|
+| identity | 0.2214648 | 0% | 77.3% |
+| target temperature | 0.2196202 | 0.83% | 77.3% |
+| temperature + token bias | 0.2178015 | 1.65% | 77.8% |
+| quant-only predicted low rank | 0.2182810 | 1.44% | 78.0% |
+| 16-direction oracle | 0.0950399 | 57.09% | 94.4% |
+
+Inner validation chose zero directions in folds 0, 1, and 3, and one direction with
+alpha 1000 in fold 2. The large oracle gap proves that the Q2 error has useful low-rank
+head structure, overturning the earlier tentative description of the residual as simply
+irreducible noise. The tested quant-only features cannot predict its context-specific
+amplitudes, so the low-rank model is not deployable and does not beat static token bias.
+The next experiment should focus on amplitude inference or an uncertainty-aware head
+sampler, not on adding more residual directions.

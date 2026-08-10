@@ -209,11 +209,11 @@ def write_csv(path: Path, rows: list[dict]) -> None:
         writer.writerows(rows)
 
 
-def write_report(path: Path, rows: list[dict]) -> None:
+def write_report(path: Path, rows: list[dict], reference_label: str) -> None:
     lines = [
         "# Expanded sparse calibration results",
         "",
-        "The compact analyzer retains only the union of non-clipped Q8/candidate tokens per",
+        f"The compact analyzer retains only the union of non-clipped {reference_label}/candidate tokens per",
         "position. Four outer folds hold out complete blocks of context chunks. Temperature",
         "is fitted at the downstream temperature. The entropy-token method learns separate",
         "token biases for low-, middle-, and high-entropy calibration tertiles.",
@@ -246,15 +246,21 @@ def write_report(path: Path, rows: list[dict]) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--reference", type=Path, required=True)
-    parser.add_argument("--q4", type=Path, required=True)
-    parser.add_argument("--q2", type=Path, required=True)
+    parser.add_argument("--q8", type=Path)
+    parser.add_argument("--q4", type=Path)
+    parser.add_argument("--q2", type=Path)
+    parser.add_argument("--reference-label", default="Q8")
     parser.add_argument("--temperatures", type=float, nargs="+", default=[0.8, 1.0])
     parser.add_argument("--chunk-counts", type=int, nargs="+", default=[1, 2, 4, 8, 16, 24])
     parser.add_argument("--folds", type=int, default=4)
     parser.add_argument("--jobs", type=int, default=2)
     parser.add_argument("--output-dir", type=Path, default=Path("results/gpu32"))
     args = parser.parse_args()
-    jobs = (("Q4_K_XL", args.q4), ("Q2_K_XL", args.q2))
+    jobs = tuple((name, path) for name, path in (
+        ("Q8_K_XL", args.q8), ("Q4_K_XL", args.q4), ("Q2_K_XL", args.q2)
+    ) if path is not None)
+    if not jobs:
+        parser.error("at least one of --q8, --q4, or --q2 is required")
     rows = []
     with concurrent.futures.ProcessPoolExecutor(max_workers=args.jobs) as executor:
         futures = [executor.submit(analyze_quant, args.reference, path, name,
@@ -268,7 +274,7 @@ def main() -> None:
                                row["temperature"], row["method"]))
     args.output_dir.mkdir(parents=True, exist_ok=True)
     write_csv(args.output_dir / "sparse_calibration.csv", rows)
-    write_report(args.output_dir / "REPORT.md", rows)
+    write_report(args.output_dir / "REPORT.md", rows, args.reference_label)
     print(f"wrote {args.output_dir / 'REPORT.md'}")
 
 
