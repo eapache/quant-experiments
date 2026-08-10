@@ -31,6 +31,7 @@ llama.cpp revision, backend, prompt distribution, and reference sampler.
 
 ## Durable results
 
+- [`NEXT_STEPS.md`](NEXT_STEPS.md): advanced denoiser and quant-aware samplers still untested
 - [`EXPERIMENT_LOG.md`](EXPERIMENT_LOG.md): decisions, commands, environment, and findings
 - [`results/gpu32/REPORT.md`](results/gpu32/REPORT.md): 63-1,512-position correction curves
 - [`results/gpu32/SAMPLER.md`](results/gpu32/SAMPLER.md): held-out temperature/top-p search
