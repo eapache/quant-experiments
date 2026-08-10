@@ -18,7 +18,6 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
-from scipy.optimize import minimize_scalar
 
 
 GAP_EDGES = np.array([0.125, 0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 12.0], dtype=np.float32)
@@ -184,14 +183,21 @@ def sampler_metrics(reference_rows: list[np.ndarray], candidate: np.ndarray, mas
 def fit_temperature(reference: np.ndarray, candidate: np.ndarray, mask: np.ndarray,
                     target_temperature: float = 1.0) -> float:
     p, _ = distribution(reference, mask, target_temperature)
-
-    def objective(scale: float) -> float:
-        _, lq = distribution(scale * candidate, mask, target_temperature)
-        safe_lq = np.where(mask, lq, 0.0)
-        return float(-np.sum(p * safe_lq, dtype=np.float64) / p.shape[0])
-
-    result = minimize_scalar(objective, bounds=(0.4, 1.8), method="bounded", options={"xatol": 2e-5})
-    return float(result.x)
+    reference_expectation = np.sum(p * candidate, dtype=np.float64) / p.shape[0]
+    scale = 1.0
+    for _ in range(8):
+        q, _ = distribution(scale * candidate, mask, target_temperature)
+        row_expectation = np.sum(q * candidate, axis=1, dtype=np.float64)
+        expectation = row_expectation.mean()
+        variance = np.sum(q * (candidate - row_expectation[:, None]) ** 2,
+                          dtype=np.float64) / q.shape[0]
+        gradient = (expectation - reference_expectation) / target_temperature
+        curvature = variance / (target_temperature * target_temperature)
+        step = gradient / max(curvature, 1e-12)
+        scale = float(np.clip(scale - step, 0.4, 1.8))
+        if abs(step) < 1e-6:
+            break
+    return scale
 
 
 def gap_buckets(candidate: np.ndarray, mask: np.ndarray) -> np.ndarray:

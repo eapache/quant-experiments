@@ -30,6 +30,7 @@ It explicitly identified aligned real GGUFs as the missing decisive experiment.
 ## Available real-model environment
 
 - llama.cpp checkout: `/home/eapache/src/llama.cpp`
+- llama.cpp commit: `030ebb558a5820b444a8f836ed5cdd46c9b4bd7a`
 - build revision reported by `llama-cli --version`: `10358 (030ebb558)`
 - inference backend for this run: CPU (CUDA initialization reports no device)
 - CPU: AMD Ryzen 9 9900X, 12 physical / 24 logical cores
@@ -41,6 +42,14 @@ It explicitly identified aligned real GGUFs as the missing decisive experiment.
 
 Only Q8, Q4, and Q2 are available. Q8 is therefore the experimental reference, not a
 claim of BF16 ground truth. Conclusions must be phrased as recovery toward Q8.
+
+Model SHA-256 hashes:
+
+| File | SHA-256 |
+|---|---|
+| Q8_K_XL | `e786a3c6570474c3885199bfb5adc54325aa7521a314e10b0aaefe16a54ba42f` |
+| Q4_K_XL | `b252c5610a42ca82d20fe2a12813e9d069eed89292907e26c783eeb0bc961bc7` |
+| Q2_K_XL | `79aa0b583c888976013002f66b9f617070d91cf8de6a09dc775983640ac59463` |
 
 ## Extraction decision
 
@@ -165,3 +174,136 @@ for expanded corpora or rollout experiments. Offline top-p analysis, not model i
 was the slowest first-pass step because it sorts candidate support for every held-out row.
 The analyzer now caches reference nucleus distributions and runs Q4/Q2 in two processes;
 the full four-fold run takes about two minutes.
+
+### Validation against llama.cpp
+
+The custom parser was checked against llama.cpp's own `--kl-divergence` calculation on
+the same CPU captures:
+
+| Candidate | llama.cpp mean KL | Analyzer raw mean KL | Relative difference |
+|---|---:|---:|---:|
+| Q4_K_XL | 0.017134 | 0.017101 | -0.19% |
+| Q2_K_XL | 0.244946 | 0.244441 | -0.21% |
+
+The small difference is expected: llama.cpp ignores base terms below its storage cutoff,
+while the analyzer takes the union of retained support and renormalizes. Agreement at the
+0.2% level validates the binary decoder and metric implementation.
+
+### Low-sample boundary on the first eight chunks
+
+`analyze_low_sample.py` repeats the outer-fold evaluation with 63, 126, 252, and 378
+calibration positions. The main findings are:
+
+- Q2 temperature at T=1 recovers about 0.8% KL even with 63 positions. Its scale SD falls
+  from 0.0203 at 63 positions to 0.0044 at 378.
+- Q2 token bias overfits badly at 63-126 positions, becomes marginal around 252, and
+  recovers 2.46% at 378.
+- Q4 token bias is safer, improving KL by 0.5%, 1.1%, 2.2%, and 2.9% as calibration grows.
+- At downstream T=0.8, scalar temperature is essentially useless for both quants.
+
+This refutes the synthetic study's optimistic 8-16-position token-bias result for real
+Q2 GGUF inference. A scalar is low-sample; vocabulary corrections are not.
+
+### Backend identity
+
+Running the same Q8 model and tokens on CUDA0 against the saved CPU Q8 distributions gave
+mean KL 0.000561, RMS correct-token probability change 0.653%, and 99.008% top-1
+agreement. This is only about 3.3% of Q4's Q8-relative KL, but it is measurable and causes
+about 1% top-1 flips. The inference backend must be part of a calibration artifact's
+identity. The expanded Q8/Q4/Q2 captures were therefore all regenerated on CUDA0.
+
+### Expanded CUDA experiment
+
+The RTX PRO 4500 generated 32 chunks / 2,016 evaluated positions per quant in roughly two
+seconds per model. Each `.kld` file is 955 MiB. The corpus remains `chats/first.txt`, now
+using its first 4,096 tokens.
+
+Reference extraction command (repeat with Q4/Q2 model and output names):
+
+```bash
+/home/eapache/src/llama.cpp/build/bin/llama-perplexity \
+  -m /home/eapache/src/llama.cpp/models/custom/Qwen3.5-4B/Qwen3.5-4B-UD-Q8_K_XL.gguf \
+  -f chats/first.txt -c 128 -b 128 -ub 128 --chunks 32 -t 12 --no-warmup \
+  -dev CUDA0 -sm none -ngl all --kl-divergence-base results/logits/q8-32.kld
+```
+
+`analyze_sparse.py` stores only the union of non-clipped reference/candidate tokens per
+position. On the original eight-chunk data it reproduced dense KL results within a few
+millionths and reduced a representative run from minutes to 1.7 seconds. The full
+32-chunk learning curve, including entropy-conditioned biases, takes about 45 seconds.
+
+Four outer folds each hold out eight whole chunks (504 positions) and train on up to 24
+other chunks (1,512 positions). At maximum calibration size:
+
+| Quant / downstream T | Raw KL | Best token correction KL | Recovered |
+|---|---:|---:|---:|
+| Q4 / 0.8 | 0.0200073 | 0.0195165 | 2.45% |
+| Q4 / 1.0 | 0.0171895 | 0.0167327 | 2.66% |
+| Q2 / 0.8 | 0.2591990 | 0.2578914 | 0.50% |
+| Q2 / 1.0 | 0.2222293 | 0.2186639 | 1.60% |
+
+Q2 token bias does not become reliably beneficial until roughly 1,000 positions on these
+broader held-out blocks. Entropy-conditioned token bias does not beat the single bias at
+maximum calibration and is often worse. The error is not exposing a useful simple
+entropy-dependent direction.
+
+### Direct sampling-configuration result
+
+`analyze_sampler_grid.py` targets the Q8 sampler at T=0.8/top-p=0.95. Each outer fold uses
+only 256 evenly spaced positions from other chunks for configuration search and evaluates
+on all 504 positions in the held-out block.
+
+| Quant | Method | Candidate setting (fold mean) | Held-out JS | Recovered |
+|---|---|---|---:|---:|
+| Q4 | same settings | T=0.800, p=0.950 | 0.0075621 | 0% |
+| Q4 | tuned T | T=0.795, p=0.950 | 0.0075797 | -0.23% |
+| Q2 | same settings | T=0.800, p=0.950 | 0.0663932 | 0% |
+| Q2 | tuned T | T=0.760, p=0.950 | 0.0649256 | 2.21% |
+| Q2 | tuned p | T=0.800, p=0.931 | 0.0658770 | 0.78% |
+| Q2 | jointly tuned | T=0.728, p=0.965 | 0.0646430 | 2.64% |
+
+Q2 temperature-only fits are stable across folds: 0.755, 0.765, 0.755, and 0.760 (mean
+0.760, sample SD about 0.004). Top-p-only fits are 0.930-0.935. Joint optima are less
+identifiable: lower temperatures trade against larger nuclei, producing T=0.710-0.745
+and top-p=0.960-0.970. The joint objective improves another 0.43 percentage points over
+temperature-only, but its parameters are much less stable. Recommend the scalar T=0.76
+result if a practical Q2 preset is desired.
+
+Q4 correctly yields a null result: its optimum is already effectively the reference
+sampler configuration, and selecting tiny apparent training improvements slightly hurts
+held-out JS.
+
+### Frozen out-of-domain validation
+
+To separate real transfer from within-corpus selection, the settings above were frozen
+and evaluated on the first 4,096 tokens of
+`chats/quant-sampler-compensation-lab/quant_sampler_lab.py`. Fresh 32-chunk Q8/Q4/Q2
+captures were generated on CUDA0 with the same extraction command, changing only `-f`
+and the output names. No code-corpus position was used for fitting.
+
+| Quant | Frozen method | Setting | Code JS | Recovered |
+|---|---|---|---:|---:|
+| Q2 | same settings | T=0.8, p=0.95 | 0.0514493 | 0% |
+| Q2 | temperature | T=0.76, p=0.95 | 0.0510595 | 0.76% |
+| Q2 | top-p | T=0.8, p=0.93125 | 0.0515347 | -0.17% |
+| Q2 | joint | T=0.7275, p=0.965 | 0.0508212 | 1.22% |
+| Q4 | temperature | T=0.795, p=0.95 | 0.0055471 | 0.38% |
+
+Across 32 complete code chunks, the paired mean JS reduction from Q2 T=0.76 was
+0.0003898 with a normal 95% interval [0.0000264, 0.0007532]. The joint setting reduced
+JS by 0.0006281 [0.0002455, 0.0010107]. Q2 top-p alone reversed sign. Both frozen Q4
+intervals include zero.
+
+Thus the Q2 temperature direction transfers beyond the calibration domain, but its
+relative recovery falls from 2.21% to 0.76%. Top-p is workload-specific. This strengthens
+the scientific proof while weakening any claim of a universal preset: even for one exact
+quant/backend, the magnitude depends on the context distribution.
+
+### Overall conclusion
+
+The technique is proven in the narrow scientific sense: a tiny paired calibration finds
+a stable, quant-specific Q2 sampling adjustment that improves held-out distribution
+matching, and correctly recommends no change for Q4. The effect is only 2-3%. Neither
+ordinary samplers nor the tested token/gap/entropy corrections invert most of Q2's
+quantization damage. The dominant residual is token-specific ranking noise not predictable
+from the quantized output distribution by these low-capacity transforms.
