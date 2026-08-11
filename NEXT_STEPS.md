@@ -368,20 +368,22 @@ All advanced experiments should retain the safeguards established by the current
 - Compare every target-aware oracle to equal-rank random and covariance-destroying controls;
   report the learned-specific gain separately from generic oracle capacity.
 
+## Completed: multi-document confirmation
+
+The 21.1 MiB two-block gate+up model improves all four predeclared Python documents. Per-file
+KL recovery is 4.79%, 3.94%, 1.87%, and 5.39%. Pooled over 8,064 positions, KL falls from
+0.1765801 to 0.1694861, recovering 4.02%; pooled JS recovery is 3.38%. Mean whole-document
+KL reduction is 0.0070940 with descriptive four-document interval
+[0.0026433, 0.0115446].
+
+This confirms the compact hybrid beyond the two selection files, though all confirmation
+documents remain Python implementations from one repository. See
+`results/bf16_document_confirmation/DOCUMENT_CONFIRMATION.md`.
+
 ## Recommended next decisive experiment
 
-Retain the two-block Q4 gate+up model as the compact recommendation. Before more
-same-corpus tensor selection, validate it across multiple independently sourced prose and
-code workloads; the current chunk intervals measure positions within only two files. A
-four-document Python confirmation set is now frozen in
-`results/bf16_document_confirmation/CORPUS.md`; evaluate every listed document without
-replacement or removal.
-Separately, collect many independently sourced documents before adding learned model
-capacity; more positions from the same transcript will not resolve workload-level
-uncertainty. For another learned
-test, optimize held-out BF16 KL directly rather than squared error to non-identifiable
-per-row oracle coefficients, and retain equal-rank random controls. Reuse the hidden-state
-extractor only after this data expansion. If a direct-KL final-state map is still rejected,
-localize BF16/Q2 differences across earlier layers before attempting a last-block adapter
-or LoRA. The existing output distributions and final states do not support a deployable
-correction beyond the simple baselines.
+Retain the two-block Q4 gate+up model as the compact recommendation. Freeze a second
+confirmation set outside this repository and include different source formats before more
+tensor selection. This will test whether the gain extends beyond one Python authoring
+style. Separately, collect substantially more paired data before adding learned model
+capacity; more positions from the same sources will not resolve workload-level uncertainty.

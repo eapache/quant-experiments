@@ -19,3 +19,7 @@ are in `confirmation_corpora.csv`.
 This set is stronger than treating chunks from one file as independent workloads, but it
 still represents one repository, one authoring style, and Python only. Its document-level
 variation should therefore be reported directly rather than generalized to all workloads.
+
+The completed frozen evaluation is in `DOCUMENT_CONFIRMATION.md`. All four documents
+improve, pooled KL recovery is 4.02%, and the descriptive interval across whole-document
+KL reductions excludes zero.

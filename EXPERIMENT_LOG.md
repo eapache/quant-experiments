@@ -1085,3 +1085,37 @@ may be removed or substituted based on its outcome. The analysis will report eac
 document separately, a pooled position result, and variation across four documents. This
 is a confirmation across distinct implementations, not a claim about independent authors
 or non-Python workloads.
+
+All twelve BF16/Q2/gate+up captures used the standard command, substituting each frozen
+source and output label:
+
+```bash
+/home/eapache/src/llama.cpp/build/bin/llama-perplexity \
+  -m MODEL.gguf -f FROZEN_DOCUMENT.py \
+  -c 128 -b 128 -ub 128 --chunks 32 -t 12 --no-warmup \
+  -dev CUDA0 -sm none -ngl all --kl-divergence-base results/logits/confirm-LABEL-MODEL.kld
+
+python3 evaluate_document_confirmation.py \
+  --document real-logits results/logits/confirm-real-logits-bf16.kld \
+             results/logits/confirm-real-logits-q2.kld \
+             results/logits/confirm-real-logits-gate-up.kld \
+  --document low-rank-controls results/logits/confirm-low-rank-controls-bf16.kld \
+             results/logits/confirm-low-rank-controls-q2.kld \
+             results/logits/confirm-low-rank-controls-gate-up.kld \
+  --document gap-calibration results/logits/confirm-gap-calibration-bf16.kld \
+             results/logits/confirm-gap-calibration-q2.kld \
+             results/logits/confirm-gap-calibration-gate-up.kld \
+  --document hidden-adapter results/logits/confirm-hidden-adapter-bf16.kld \
+             results/logits/confirm-hidden-adapter-q2.kld \
+             results/logits/confirm-hidden-adapter-gate-up.kld \
+  --output-dir results/bf16_document_confirmation
+```
+
+The compact hybrid improves all four whole documents. KL recovery is 4.79% for real-logits,
+3.94% for low-rank-controls, 1.87% for gap-calibration, and 5.39% for hidden-adapter.
+Pooled KL falls from 0.1765801 to 0.1694861 over 8,064 positions (4.02% recovery); pooled JS
+recovery is 3.38%. Mean document KL reduction is 0.0070940 with a four-document t interval
+[0.0026433, 0.0115446]. Two within-file chunk intervals cross zero, but the primary
+whole-document interval does not. The model is now supported across six code/prose files,
+with the remaining caveat that the four new files share repository, authoring style, and
+Python language.

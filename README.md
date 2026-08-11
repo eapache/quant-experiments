@@ -74,6 +74,10 @@ evaluation over 2,016 teacher-forced positions:
   versus 2.31% from block 0. Block 1 retains 56.0% of the two-block reduction for half the
   bytes, but on code it recovers only 1.50% across 19/32 chunks and its interval crosses
   zero. The two-block 21.1 MiB design remains the smallest validated configuration.
+- A predeclared four-document confirmation then improves all 4/4 untouched Python files.
+  Across 8,064 positions, the 21.1 MiB model recovers 4.02% pooled KL; mean whole-document
+  reduction has interval [0.00264, 0.01154]. This is stronger portability evidence than the
+  earlier single-file chunk intervals, while still limited to one repository and language.
 - Cumulative-mass calibration learns a stable global Q2 top-p near 0.939 and recovers
   0.64% sampler JS in held-out prose. Frozen on code, the gain falls to 0.06% with a 95%
   interval crossing zero. Temperature remains the strongest simple portable adjustment.
@@ -113,6 +117,7 @@ distribution, and reference sampler.
 - [`results/bf16_gate_up_layers/HYBRID_PRECISION.md`](results/bf16_gate_up_layers/HYBRID_PRECISION.md): block-0-versus-block-1 gate+up split
 - [`results/bf16_gate_up_layers/FROZEN_HYBRID_PRECISION.md`](results/bf16_gate_up_layers/FROZEN_HYBRID_PRECISION.md): frozen single-block rejection
 - [`results/bf16_document_confirmation/CORPUS.md`](results/bf16_document_confirmation/CORPUS.md): predeclared four-document confirmation set
+- [`results/bf16_document_confirmation/DOCUMENT_CONFIRMATION.md`](results/bf16_document_confirmation/DOCUMENT_CONFIRMATION.md): frozen multi-document result
 - [`results/bf16_mass_q2/MASS_CALIBRATION.md`](results/bf16_mass_q2/MASS_CALIBRATION.md): cumulative-mass calibration
 - [`results/bf16_mass_q2/FROZEN_MASS.md`](results/bf16_mass_q2/FROZEN_MASS.md): frozen code-corpus mass check
 - [`results/bf16_gap_q2/GAP_CALIBRATION.md`](results/bf16_gap_q2/GAP_CALIBRATION.md): monotonic rank-conditioned gap calibration
