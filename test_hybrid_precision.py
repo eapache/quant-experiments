@@ -26,6 +26,7 @@ class HybridPrecisionTest(unittest.TestCase):
             text = path.read_text()
         self.assertIn("most size-efficient", text)
         self.assertIn("one block", text)
+        self.assertIn("Baseline-relative KL reduction per added MiB", text)
 
 
 if __name__ == "__main__":

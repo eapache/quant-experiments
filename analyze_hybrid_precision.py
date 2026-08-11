@@ -42,6 +42,7 @@ def analyze(reference: Path, base_logits: Path, base_model: Path,
     summary = [{
         "label": "Q2 baseline", "kind": "base", "model_bytes": base_size,
         "added_bytes": 0, "kl_recovery": 0.0, "js_recovery": 0.0,
+        "kl_reduction_per_mib": "",
         "mean_chunk_kl_reduction": 0.0, "chunk_interval_low": 0.0,
         "chunk_interval_high": 0.0, "improved_chunks": 0,
         **base_metrics,
@@ -68,11 +69,15 @@ def analyze(reference: Path, base_logits: Path, base_model: Path,
                 "chunk_interval_low": mean - half_width,
                 "chunk_interval_high": mean + half_width,
                 "improved_chunks": int((reductions > 0).sum()),
+                "kl_reduction_per_mib": ((base_metrics["kl"] - aggregate["kl"])
+                                           / max(added_mib, 1e-12)),
                 **aggregate,
             }
             if kind == "hybrid":
-                record["marginal_kl_per_mib"] = ((previous_kl - aggregate["kl"])
-                                                   / ((size - previous_size) / 2**20))
+                incremental_mib = (size - previous_size) / 2**20
+                record["marginal_kl_per_mib"] = (
+                    (previous_kl - aggregate["kl"]) / incremental_mib
+                    if incremental_mib > 0 else "")
                 previous_kl = aggregate["kl"]
                 previous_size = size
             else:
@@ -120,13 +125,14 @@ def write_report(path: Path, summary: list[dict]) -> None:
             f"The best absolute hybrid is **{best['label']}** at {best['kl_recovery']:.2%}",
             f"recovery. Raw Q2 KL is {base['kl']:.7f}.",
         ]
-        if len(hybrids) >= 3:
-            lines += [
-                "",
-                "Marginal KL reduction per added MiB between successive listed hybrids is "
-                + ", ".join(f"{row['marginal_kl_per_mib']:.8f}" for row in hybrids[:3])
-                + ", respectively.",
-            ]
+        lines += [
+            "",
+            "Baseline-relative KL reduction per added MiB is "
+            + ", ".join(
+                f"{row['label']}={((base['kl'] - row['kl']) / (row['added_bytes'] / 2**20)):.8f}"
+                for row in hybrids)
+                + ".",
+        ]
     lines += [
         "",
         "Aggregate values are in `hybrid_precision.csv`; per-chunk metrics are in",
