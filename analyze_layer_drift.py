@@ -186,10 +186,17 @@ def write_report(path: Path, summary: list[dict], reference_label: str,
     largest_jump = max(zip(summary[:-1], summary[1:]),
                        key=lambda pair: pair[1]["relative_error"] - pair[0]["relative_error"])
     jump = largest_jump[1]["relative_error"] - largest_jump[0]["relative_error"]
+    peak = max(summary, key=lambda row: row["relative_error"])
+    first_full = next(row for row in summary if int(row["layer"]) == 3)
+    last = summary[-1]
     lines += [
         "",
-        f"The largest adjacent increase in relative error is from layer {largest_jump[0]['layer']} ",
-        f"to {largest_jump[1]['layer']} ({jump:+.2%}).",
+        f"The largest adjacent increase in relative error is from layer "
+        f"{largest_jump[0]['layer']} to {largest_jump[1]['layer']} ({jump:+.2%}). The input",
+        f"embedding starts at {summary[0]['relative_error']:.2%} error, but drift reaches",
+        f"{first_full['relative_error']:.2%} before the first full-attention block. Relative error",
+        f"peaks at layer {peak['layer']} ({peak['relative_error']:.2%}); by layer {last['layer']},",
+        f"its per-row correlation with final KL is {last['row_error_kl_correlation']:.3f}.",
         "",
         "Machine-readable layer summaries are in `layer_drift.csv`; held-out static-bias folds",
         "are in `layer_bias_folds.csv`.",

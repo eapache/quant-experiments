@@ -180,6 +180,26 @@ correlation falls to 0.028. This is consistent with a tiny real head-quantizatio
 but it is neither large nor stable enough to justify a BF16 sidecar. See
 `results/bf16_output_head_q2/FROZEN_OUTPUT_HEAD.md`.
 
+## Completed: residual-stream drift localization
+
+`extract_layer_states.cpp` uses llama.cpp's layer-input output hook to capture all 32
+unnormalized residual-stream states on the exact teacher-forced positions. Comparing BF16
+and Q2 with `analyze_layer_drift.py` shows that the error is created early and is strongly
+directional rather than a scale mismatch. Relative state error is 1.79% at the Q6_K input
+embedding, 11.33% after the first recurrent block, and 22.14% before the first
+full-attention block. The first three recurrent blocks therefore create the steepest drift;
+the first full-attention block does not add to relative error. Error peaks at 42.35% at
+layer 17 and ends at 39.91% before the final block, while absolute error continues growing.
+
+A single global candidate scale barely changes any layer's error. Held-out mean state bias
+recovers 9.15% of state MSE at layer 3 but only about 3-5% through most later layers.
+Per-row drift has essentially zero correlation with final KL early, rising to 0.27 at
+layers 30-31. This points to a cheap targeted test: inject the prose-trained mean residual
+immediately before the first full-attention block, then measure held-out logits and freeze
+it on code. If that fails, selectively retaining the first recurrent blocks at higher
+precision is more motivated than upgrading the output head. See
+`results/bf16_layer_drift_q2/LAYER_DRIFT.md`.
+
 ## Priority 2: larger-corpus adapter or LoRA distillation
 
 The remaining learned-model test needs substantially more paired and more varied data.

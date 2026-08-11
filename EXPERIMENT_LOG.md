@@ -727,3 +727,45 @@ Code KL falls from 0.1792153 to 0.1789424, only 0.15% recovery. The correction i
 correlation also falls from 0.037 on prose to 0.028 on code. This independent workload does
 not establish a portable benefit. See
 `results/bf16_output_head_q2/FROZEN_OUTPUT_HEAD.md`.
+
+### Residual-stream drift localization (2026-08-11)
+
+The output-head result places nearly all Q2 degradation upstream, so the next experiment
+captures the input residual stream of every transformer block. `extract_layer_states.cpp`
+uses the repository llama.cpp revision's asynchronous layer-input hook and preserves the
+same token, chunk, BOS, and evaluated-position rules as the logits and final-state captures.
+The two 630 MiB float32 intermediates are ignored and reproducible:
+
+```bash
+./build_layer_extractor.sh
+
+./extract_layer_states \
+  --model /home/eapache/src/llama.cpp/models/custom/Qwen3.5-4B/Qwen3.5-4B-UD-Q2_K_XL.gguf \
+  --tokens results/logits/q2-32.kld --output results/logits/q2-layers-32.bin \
+  --layers 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31 \
+  --gpu-layers 999 --device CUDA0 --threads 12
+
+# Repeat with the BF16 model, logits token header, and bf16-layers-32.bin.
+python3 analyze_layer_drift.py \
+  --reference-states results/logits/bf16-layers-32.bin \
+  --candidate-states results/logits/q2-layers-32.bin \
+  --reference-logits results/logits/bf16-32.kld \
+  --candidate-logits results/logits/q2-32.kld \
+  --output-dir results/bf16_layer_drift_q2
+```
+
+Relative residual-stream error rises from 1.79% at the Q6_K input embedding to 11.33%
+after recurrent block 0, 16.29% after block 1, and 22.14% before the first full-attention
+block. It falls slightly across that full-attention block to 21.39%, so the largest early
+damage is in the first three recurrent gated-delta blocks rather than attention. Relative
+error peaks at 42.35% at layer 17 and ends at 39.91% before the final block; absolute error
+continues growing to 0.422 RMS because the residual stream itself grows.
+
+The best global candidate scale barely reduces relative error at every layer, excluding a
+simple magnitude mismatch. A chunk-held-out mean state bias recovers 9.15% of state MSE at
+layer 3 and generally 3-5% later. Per-row state error is uncorrelated with final KL early,
+then rises to correlation 0.27 by layers 30-31. The next cheap intervention is therefore a
+10 KiB mean residual control vector before the first full-attention block, evaluated with
+outer-fold-clean prose vectors and then frozen on code. If it does not improve logits,
+selectively higher precision for the first recurrent blocks is the better model-side test.
+See `results/bf16_layer_drift_q2/LAYER_DRIFT.md`.
