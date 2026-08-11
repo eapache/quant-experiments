@@ -1045,3 +1045,17 @@ A paired five-repeat pp128/tg32 benchmark measured Q2 at 5941.0/233.81 tok/s, up
 is 0.76% below Q2, within roughly one run standard deviation; prompt throughput is likewise
 unchanged within variation. Raw results are in
 `results/bf16_ffn_gate_up/gate_up_throughput.csv`.
+
+### Gate+up layer split (2026-08-11)
+
+The validated gate+up selection was split by layer using otherwise identical builder
+commands with `--layers 0` and `--layers 1`. Each model replaces two Q4 matrices and adds
+11,059,424 bytes (10.5 MiB, 0.57%). Block 0 SHA-256 is
+`82da855791989a2a70e0a0495a9dc5f711bafa82ee5dd27dc590cd13d70b5598`; block 1 is
+`50257a021605751d47fd68794895df7657883c30714f15ec7dfc274094179517`.
+
+On prose, block 0 reaches KL 0.2163606 (2.31% recovery), improves 23/32 chunks, and has
+interval [0.0019541, 0.0082672]. Block 1 reaches 0.2152561 (2.81%), improves 24/32, and has
+interval [0.0029765, 0.0094538]. Their reductions are approximately additive. Block 1
+retains 56.0% of the two-block model's reduction for half the bytes and is selected before
+its code capture is generated.

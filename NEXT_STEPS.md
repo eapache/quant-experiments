@@ -301,6 +301,15 @@ portable gain. Gate+up retains 55.9% of the Q8 block hybrid's code KL reduction 
 11.5% of its added bytes. Generation is 0.76% below Q2 in a paired run, within roughly one
 run standard deviation. See `results/bf16_ffn_gate_up/FROZEN_HYBRID_PRECISION.md`.
 
+## Completed provisionally: gate+up layer split
+
+Q4 gate+up in block 1 alone adds 10.5 MiB (0.57%) and recovers 2.81% of prose KL, improving
+24/32 chunks with interval [0.002977, 0.009454]. Block 0 alone recovers 2.31%, improves
+23/32, and also excludes zero. The effects are approximately additive, but block 1 retains
+56.0% of the two-block reduction for half its bytes and is the preselected single-block
+design. Code validation remains pending. See
+`results/bf16_gate_up_layers/HYBRID_PRECISION.md`.
+
 ## Priority 2: larger-corpus adapter or LoRA distillation
 
 The remaining learned-model test needs substantially more paired and more varied data.
@@ -355,8 +364,8 @@ All advanced experiments should retain the safeguards established by the current
 
 ## Recommended next decisive experiment
 
-Split the validated gate+up tensors by block 0 versus block 1 to test whether another half
-of the 21.1 MiB can be removed without losing the cross-workload gain.
+Validate the preselected block-1-only gate+up model on code and benchmark it against Q2 and
+the validated two-block gate+up model.
 Separately, collect many independently sourced documents before adding learned model
 capacity; more positions from the same transcript will not resolve workload-level
 uncertainty. For another learned

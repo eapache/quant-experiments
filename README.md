@@ -70,6 +70,9 @@ evaluation over 2,016 teacher-forced positions:
   gate+up combination recovers 5.02% for 21.1 MiB, slightly beating all-FFN. Gate+up is
   frozen as the primary sub-25-MiB design. It recovers 3.03% on code with an interval above
   zero and has no clearly measurable throughput penalty; up-only falls to 1.28% on code.
+- Splitting gate+up by layer gives 2.81% prose recovery from block 1 alone for 10.5 MiB,
+  versus 2.31% from block 0. Block 1 retains 56.0% of the two-block reduction for half the
+  bytes and is frozen for code validation.
 - Cumulative-mass calibration learns a stable global Q2 top-p near 0.939 and recovers
   0.64% sampler JS in held-out prose. Frozen on code, the gain falls to 0.06% with a 95%
   interval crossing zero. Temperature remains the strongest simple portable adjustment.
@@ -106,6 +109,7 @@ distribution, and reference sampler.
 - [`results/bf16_ffn_matrices/HYBRID_PRECISION.md`](results/bf16_ffn_matrices/HYBRID_PRECISION.md): early FFN matrix ablation
 - [`results/bf16_ffn_gate_up/HYBRID_PRECISION.md`](results/bf16_ffn_gate_up/HYBRID_PRECISION.md): predeclared gate+up combination
 - [`results/bf16_ffn_gate_up/FROZEN_HYBRID_PRECISION.md`](results/bf16_ffn_gate_up/FROZEN_HYBRID_PRECISION.md): frozen compact gate+up code check
+- [`results/bf16_gate_up_layers/HYBRID_PRECISION.md`](results/bf16_gate_up_layers/HYBRID_PRECISION.md): block-0-versus-block-1 gate+up split
 - [`results/bf16_mass_q2/MASS_CALIBRATION.md`](results/bf16_mass_q2/MASS_CALIBRATION.md): cumulative-mass calibration
 - [`results/bf16_mass_q2/FROZEN_MASS.md`](results/bf16_mass_q2/FROZEN_MASS.md): frozen code-corpus mass check
 - [`results/bf16_gap_q2/GAP_CALIBRATION.md`](results/bf16_gap_q2/GAP_CALIBRATION.md): monotonic rank-conditioned gap calibration
