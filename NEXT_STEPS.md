@@ -156,6 +156,23 @@ output head, it is also closely related to information already present in the fu
 This does not replace a direct-KL training test. See
 `results/bf16_hidden_q2/HIDDEN_ADAPTER.md`.
 
+## Completed: sparse high-precision output-head sidecar
+
+`analyze_output_head.py` uses the captured Q2 final state and exact GGUF tensor rows to
+apply `(W_BF16 - W_Q6) h` only to the quant candidate's top-N tokens. Head size and blend
+strength are selected on an inner chunk split. Recomputed Q6 logits match the saved logits
+to 0.027 centered RMSE over the top-256 sweep, validating the state/tensor alignment.
+
+Nested selection recovers 0.57% of raw Q2 KL (0.2214713 to 0.2202139). Every outer fold
+improves; the mean reduction is 0.0012574 with a four-block t interval
+[0.0003679, 0.0021468]. Top-1 agreement rises from 77.3% to 77.8%, while top-10 overlap is
+unchanged. The head correction's RMS is only 0.036 versus 0.959 for the full residual on
+the same tokens, with correlation 0.037. This is direct evidence that most low-bit damage
+is created upstream of the output head. The Q2 model already keeps its tied head at Q6_K,
+and a complete BF16 sidecar would add about 1.18 GiB, so this is not competitive with the
+smaller, similarly effective temperature adjustment. See
+`results/bf16_output_head_q2/OUTPUT_HEAD.md`.
+
 ## Priority 2: larger-corpus adapter or LoRA distillation
 
 The remaining learned-model test needs substantially more paired and more varied data.

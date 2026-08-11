@@ -666,3 +666,38 @@ Nearly all of the original oracle recovery comes from fitting arbitrary target-a
 directions to a concentrated head. Learned residual PCA is less portable than a random
 subspace here. See
 `results/bf16_low_rank_structure_q2/FROZEN_LOW_RANK_STRUCTURE.md`.
+
+### Sparse high-precision output-head sidecar (2026-08-11)
+
+The Q2_K_XL GGUF keeps its tied `token_embd.weight` output tensor at Q6_K. To isolate how
+much error remains in that final matrix, `analyze_output_head.py` reads matching Q6_K and
+BF16 tensor rows directly from the GGUFs and applies `(W_BF16 - W_Q6) h` to only the Q2
+candidate's top-N logits. It uses the previously captured normalized final hidden states.
+Head sizes 8 through 256 and nonnegative blend strengths are selected on an inner chunk
+split for each outer fold.
+
+```bash
+PYTHONPATH=/home/eapache/src/llama.cpp/gguf-py python3 analyze_output_head.py \
+  --reference results/logits/bf16-32.kld \
+  --candidate results/logits/q2-32.kld \
+  --hidden results/logits/q2-hidden-32.bin \
+  --reference-model /home/eapache/src/llama.cpp/models/custom/Qwen3.5-4B/Qwen3.5-4B-BF16.gguf \
+  --candidate-model /home/eapache/src/llama.cpp/models/custom/Qwen3.5-4B/Qwen3.5-4B-UD-Q2_K_XL.gguf \
+  --output-dir results/bf16_output_head_q2
+```
+
+Nested selection reduces held-out KL from 0.2214713 to 0.2202139, recovering 0.57%.
+All four folds improve; their mean reduction is 0.0012574 with a four-block t interval
+[0.0003679, 0.0021468]. Top-1 agreement rises from 77.3% to 77.8%, but top-10 overlap is
+unchanged. Fixed strength 1 with head 256, which requires no BF16-logit calibration,
+recovers 0.51% and also improves every block.
+
+The alignment diagnostic recomputes the saved Q2 logits from Q2 final states and Q6_K
+weights to 0.027 centered RMSE over the selected top-256 vocabulary rows. The actual head
+correction has RMS 0.036, versus 0.959 for the complete BF16-Q2 residual on those tokens,
+and their correlation is only 0.037. The transformer therefore creates nearly all of the
+Q2 error before the output head. A full BF16 head sidecar would add about 1.18 GiB to the
+1.81 GiB Q2 model; loading only the 26,172 rows touched by this corpus is not a portable
+deployment strategy. The output-head upgrade is measurable but too small and costly to
+recommend over sampler temperature compensation. Full results are in
+`results/bf16_output_head_q2/OUTPUT_HEAD.md`.

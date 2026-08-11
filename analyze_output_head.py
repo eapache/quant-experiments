@@ -177,6 +177,15 @@ def write_report(path: Path, selected: list[dict], curves: list[dict], diagnosti
     sidecar = mean_metric(selected, "output-head-sidecar", "kl")
     chosen = [(row["selected_head"], row["selected_strength"])
               for row in selected if row["method"] == "output-head-sidecar"]
+    raw_by_fold = {int(row["fold"]): row["kl"] for row in selected
+                   if row["method"] == "identity"}
+    sidecar_by_fold = {int(row["fold"]): row["kl"] for row in selected
+                       if row["method"] == "output-head-sidecar"}
+    reductions = np.array([raw_by_fold[fold] - sidecar_by_fold[fold]
+                           for fold in sorted(raw_by_fold)], dtype=np.float64)
+    reduction_mean = float(reductions.mean())
+    # Student-t critical value for the standard four-fold experiment (three df).
+    half_width = float(3.182 * reductions.std(ddof=1) / np.sqrt(len(reductions)))
     full_mib = full_sidecar_bytes / 2**20
     lines = [
         "# Sparse high-precision output-head sidecar",
@@ -207,6 +216,8 @@ def write_report(path: Path, selected: list[dict], curves: list[dict], diagnosti
     lines += [
         "",
         f"Fold selections (head, strength): {', '.join(f'({h}, {s:g})' for h, s in chosen)}.",
+        f"The mean per-fold KL reduction is {reduction_mean:.7f}; its four-block t interval is",
+        f"[{reduction_mean - half_width:.7f}, {reduction_mean + half_width:.7f}].",
         "",
         "## Alignment diagnostics",
         "",
