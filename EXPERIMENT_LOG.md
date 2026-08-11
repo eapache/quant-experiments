@@ -1176,3 +1176,11 @@ The same evaluation decomposes raw Q2 JS 0.0708537 to hybrid JS 0.0689017 (2.75%
 then to hybrid+temperature JS 0.0681687 (3.79% total recovery). The final compact
 recommendation is therefore the 21.1 MiB blocks-0-1 Q4 gate+up model with the pre-existing
 T=0.7625/top-p=0.95 sampler setting for a BF16 T=0.8/top-p=0.95 target.
+
+### Reproducible recommendation artifact (2026-08-11)
+
+`build_recommended_hybrid.sh` wraps the verified builder with the final four-tensor
+selection. `RECOMMENDATION.md` records exact Q2/Q4/output SHA-256 identities, byte cost,
+sampler setting, quality evidence, throughput measurements, rejected neighboring designs,
+and scope limitations. The generated 1.83 GiB model remains ignored; the recipe and every
+compact result needed to reproduce the choice are versioned.

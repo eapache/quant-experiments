@@ -102,8 +102,12 @@ evaluation over 2,016 teacher-forced positions:
 The artifacts are tied to the exact model files, llama.cpp revision, CUDA backend, prompt
 distribution, and reference sampler.
 
+The practical build and sampler configuration is consolidated in
+[`RECOMMENDATION.md`](RECOMMENDATION.md).
+
 ## Durable results
 
+- [`RECOMMENDATION.md`](RECOMMENDATION.md): exact compact hybrid recipe and evidence
 - [`NEXT_STEPS.md`](NEXT_STEPS.md): completed low-rank diagnostic and next quant-aware samplers
 - [`results/bf16_gpu32/REPORT.md`](results/bf16_gpu32/REPORT.md): BF16-relative correction curves
 - [`results/bf16_gpu32/SAMPLER.md`](results/bf16_gpu32/SAMPLER.md): BF16-relative sampler search
