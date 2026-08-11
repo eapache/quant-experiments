@@ -26,6 +26,15 @@ evaluation over 2,016 teacher-forced positions:
   rejected in three of four folds and recovers only 1.44%, worse than static token bias.
   The missing ingredient is predicting context-specific correction amplitudes, not finding
   residual structure.
+- A conditional empirical posterior over similar quant-logit heads is rejected in all
+  four folds. Forced posterior prediction is safer than a conditional mean, but still
+  recovers -0.53% of KL; the forced mean recovers -8.47%.
+- A 1,624-6,448 parameter nonlinear predictor using the top-64 shape and residual-basis
+  projections is also rejected in every fold. Forced use recovers -6.75% of KL while the
+  same 16-direction oracle remains at 57.09%.
+- Cumulative-mass calibration learns a stable global Q2 top-p near 0.939 and recovers
+  0.64% sampler JS in held-out prose. Frozen on code, the gain falls to 0.06% with a 95%
+  interval crossing zero. Temperature remains the strongest simple portable adjustment.
 
 The artifacts are tied to the exact model files, llama.cpp revision, CUDA backend, prompt
 distribution, and reference sampler.
@@ -36,6 +45,10 @@ distribution, and reference sampler.
 - [`results/bf16_gpu32/REPORT.md`](results/bf16_gpu32/REPORT.md): BF16-relative correction curves
 - [`results/bf16_gpu32/SAMPLER.md`](results/bf16_gpu32/SAMPLER.md): BF16-relative sampler search
 - [`results/bf16_low_rank_q2/LOW_RANK.md`](results/bf16_low_rank_q2/LOW_RANK.md): nested low-rank diagnostic
+- [`results/bf16_posterior_q2/POSTERIOR.md`](results/bf16_posterior_q2/POSTERIOR.md): empirical posterior sampler
+- [`results/bf16_neural_low_rank_q2/NEURAL_LOW_RANK.md`](results/bf16_neural_low_rank_q2/NEURAL_LOW_RANK.md): tiny nonlinear predictor
+- [`results/bf16_mass_q2/MASS_CALIBRATION.md`](results/bf16_mass_q2/MASS_CALIBRATION.md): cumulative-mass calibration
+- [`results/bf16_mass_q2/FROZEN_MASS.md`](results/bf16_mass_q2/FROZEN_MASS.md): frozen code-corpus mass check
 - [`results/bf16_ood_code/SAMPLER.md`](results/bf16_ood_code/SAMPLER.md): frozen BF16-relative code check
 - [`EXPERIMENT_LOG.md`](EXPERIMENT_LOG.md): decisions, commands, environment, and findings
 - [`results/gpu32/REPORT.md`](results/gpu32/REPORT.md): 63-1,512-position correction curves

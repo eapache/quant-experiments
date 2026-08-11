@@ -2,18 +2,21 @@
 
 ## Scope of the current evidence
 
-The completed real-model experiments test both the low-complexity end of the proposed
-quantization-compensation hierarchy and one higher-capacity residual model:
+The completed real-model experiments test the low-complexity end of the proposed
+quantization-compensation hierarchy and several higher-capacity residual models:
 
 - global temperature and top-p tuning;
 - quant-logit-gap bucket corrections;
 - a shrunken static per-token logit bias;
-- entropy-conditioned token biases as a crude context-adaptive correction.
-- a nested, head-restricted low-rank denoiser with oracle and quant-only amplitudes.
+- entropy-conditioned token biases as a crude context-adaptive correction;
+- a nested, head-restricted low-rank denoiser with oracle and quant-only amplitudes;
+- global and entropy-conditioned cumulative-mass calibration;
+- a conditional empirical posterior over correlated rank-wise head errors;
+- a 1,624-6,448 parameter nonlinear predictor of low-rank residual amplitudes.
 
 Deployable methods recovered only a few percent of divergence toward BF16. The low-rank
-oracle recovered much more, but its quant-only predictor did not. The following ideas
-remain untested on real GGUF logits.
+oracle recovered much more, but ridge, nearest-neighbor posterior, and tiny nonlinear
+quant-only predictors did not. The following ideas remain untested on real GGUF logits.
 
 ## Completed: predictive low-rank logit denoiser
 
@@ -50,48 +53,43 @@ baseline; inner validation selects zero directions in three of four folds. Usefu
 structure exists, but its amplitudes are not inferable from the tested entropy, margin,
 mass, and basis-projection features. See `results/bf16_low_rank_q2/LOW_RANK.md`.
 
-## Priority 2: cumulative-mass calibration
+## Completed: cumulative-mass calibration
 
-The completed top-p experiment tuned one global candidate cutoff. It did **not** learn a
-context-dependent mapping between candidate and reference cumulative mass.
+`analyze_mass_calibration.py` learns the monotonic mapping between quant prefix mass and
+BF16 mass, either globally or in quant-entropy bins. The global mapping implies Q2 top-p
+about 0.939 for the BF16 top-p=0.95 target and recovers 0.64% held-out prose JS. Entropy
+conditioning is enabled in only one of four inner selections and slightly worsens the
+aggregate result. Frozen on code, the global mapping recovers only 0.06%, with a per-chunk
+95% interval crossing zero. This does not beat tuned temperature and mostly rediscovers
+the workload-sensitive global top-p shift.
 
-For each calibration position:
+## Completed: uncertainty-aware empirical posterior sampler
 
-1. Sort tokens by the quantized logits.
-2. Measure how much BF16 probability mass is covered as quantized cumulative mass grows.
-3. Fit a small monotonic mapping conditioned on quant-only statistics, for example:
+`analyze_posterior.py` retrieves training rows with similar quant-only entropy, mass, and
+top-gap shape. It compares a rank-wise conditional-mean residual with the average of
+softmax distributions under correlated empirical residual samples. Head and neighbor
+count are nested-selected, with a null option.
 
-```text
-estimated_reference_mass = f(quant_mass, entropy, top_margin, head_shape)
-```
+The posterior mixture is substantially safer than choosing the conditional mean: forced
+use recovers -0.53% versus -8.47% KL. Both are rejected in all four folds and fall back to
+the 1.65% static-token baseline. Modeling uncertainty in this simple empirical form does
+not unlock the oracle residual structure.
 
-4. At inference, retain the quantized prefix whose estimated reference mass reaches the
-   user's requested top-p.
+## Completed: tiny nonlinear amplitude predictor
 
-Compare against same top-p, globally tuned top-p, tuned temperature, and jointly tuned
-temperature/top-p. Validate support overlap and JS divergence, not only the learned
-mass-regression error.
+`analyze_neural_low_rank.py` is a deliberately small learned-model test before attempting
+a transformer or LoRA. A one-hidden-layer tanh network receives the full top-64 quant gap
+and probability shape plus candidate projections onto the residual basis, and predicts
+the 16 oracle amplitudes. Nested selection covers 1,624-6,448 parameters, weight decay,
+and training duration.
 
-## Priority 3: uncertainty-aware posterior sampler
+All four folds reject the network. Forced use recovers -6.75% KL and worsens top-10
+overlap, while the 16-direction oracle still recovers 57.09%. This strengthens the case
+that the needed context is absent from, or not learnable from, the saved output
+distribution at this sample size. A full transformer over the same logits is not the next
+efficient step without a substantially larger paired corpus.
 
-Treat quantized candidate gaps as noisy observations of latent BF16 gaps. Estimate error
-distributions from paired calibration data as a function of quant-only state:
-
-```text
-error scale = g(quant gap, rank, entropy, top margin, token identity/features)
-```
-
-Then approximate the posterior-predictive reference distribution over the plausible head:
-
-```text
-P(token | quant logits) = E[softmax(latent reference logits) | quant logits]
-```
-
-Start with the top 32-128 candidates and simple Gaussian or empirical residual models.
-This must be evaluated against a deterministic mean-gap calibrator to show that modeling
-uncertainty itself adds value, rather than merely applying another nonlinear logit map.
-
-## Priority 4: nonlinear and pairwise gap calibration
+## Priority 2: nonlinear and pairwise gap calibration
 
 The tested gap buckets were a coarse additive correction and did not help. Stronger
 variants remain open:
@@ -105,7 +103,30 @@ variants remain open:
 Constrain mappings to remain monotonic unless held-out evidence clearly supports rank
 reversals. Otherwise a flexible fit can manufacture unstable ordering changes.
 
-## Priority 5: token-feature correction
+This is now the best remaining sampler-only experiment: it is more targeted and
+identifiable than another generic amplitude predictor.
+
+## Priority 3: hidden-state adapter or LoRA distillation
+
+If sampler-only gap calibration also fails, expose the Q2 model's final hidden state and
+train a small residual head, last-block adapter, or LoRA against BF16 soft targets. This
+is qualitatively different from a tiny transformer over logits: the hidden state can
+contain context information erased by the quantized output distribution.
+
+Start with the least invasive version:
+
+1. Expand paired prose and code calibration well beyond 2,016 positions.
+2. Capture aligned Q2 final hidden states and BF16/Q2 logits.
+3. Train a low-rank map from the Q2 hidden state directly to the 16 residual amplitudes.
+4. Only if that transfers, move the map into a last-layer LoRA or adapter and benchmark
+   Q2+adapter memory, tokens/s, and KL against Q3/Q4.
+
+The local `llama-finetune` executable is not suitable as-is: it trains model weights on
+hard next-token labels, rather than fitting a LoRA on a frozen quantized base against BF16
+distributions. A real adapter experiment needs hidden-state export and a distillation
+training path.
+
+## Priority 4: token-feature correction
 
 The static vocabulary bias used only paired output residuals. A more transferable token
 correction could use properties of the quantized output row or token:
@@ -137,10 +158,9 @@ All advanced experiments should retain the safeguards established by the current
 
 ## Recommended next decisive experiment
 
-Test the uncertainty-aware posterior sampler over the top 32-128 Q2 candidates. The
-low-rank oracle shows that head errors contain substantial correctable structure, while
-the deterministic feature-to-amplitude predictor fails. Estimate rank-, gap-, and
-entropy-conditioned residual distributions on inner calibration chunks, then compare a
-posterior-predictive softmax against a deterministic conditional-mean correction on
-untouched outer chunks. This directly tests whether acknowledging uncertain rank flips is
-more useful than trying to guess one exact residual vector.
+Test monotonic rank-conditioned gap calibration on Q2. Fit smooth mappings from quantized
+top-token gaps to expected BF16 gaps, with capacity chosen on inner chunks, and compare
+direct mean-gap correction with a consistent pairwise reconstruction. If this cannot beat
+temperature plus static token bias, expand the paired corpus and move to a final-hidden-
+state amplitude head; additional models that see only the same saved logits are unlikely
+to close the 57% oracle gap.

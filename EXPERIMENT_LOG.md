@@ -402,3 +402,98 @@ irreducible noise. The tested quant-only features cannot predict its context-spe
 amplitudes, so the low-rank model is not deployable and does not beat static token bias.
 The next experiment should focus on amplitude inference or an uncertainty-aware head
 sampler, not on adding more residual directions.
+
+### Conditional empirical posterior (2026-08-11)
+
+`analyze_posterior.py` implements the recommended uncertainty-aware test without assuming
+independent token errors. Quant-only entropy, mass, and top-gap features retrieve
+calibration rows with similar candidate head shapes. Their correlated rank-wise residual
+vectors are either averaged before softmax or treated as empirical posterior samples whose
+softmax distributions are averaged. Head sizes 32/64/128 and neighbor counts
+8/16/32/64/128 are selected on inner chunk splits, including a null option.
+
+```bash
+python3 analyze_posterior.py \
+  --reference results/logits/bf16-32.kld \
+  --candidate results/logits/q2-32.kld --candidate-name Q2_K_XL \
+  --reference-label BF16 --output-dir results/bf16_posterior_q2
+```
+
+Both methods selected the null static-bias baseline in all four folds. The best forced
+non-null setting always used head 128 and 128 neighbors. Forced conditional means worsened
+KL from 0.2214648 raw to 0.2402280 (-8.47% recovery). Posterior prediction was much safer
+at 0.2226350 (-0.53%), showing that averaging over uncertain corrections is preferable to
+applying their mean, but it still failed to improve BF16 matching. Results are in
+`results/bf16_posterior_q2/POSTERIOR.md`.
+
+### Tiny nonlinear low-rank predictor (2026-08-11)
+
+`analyze_neural_low_rank.py` tests whether modest nonlinear capacity can infer the oracle
+amplitudes from substantially richer quant-logit features. A one-hidden-layer tanh network
+receives the top-64 candidate gaps and probabilities plus the entropy/mass/margin and
+residual-basis projection features. It predicts all 16 oracle amplitudes. Hidden width
+8/32, weight decay 0.001/0.01/0.1, and 50/100/200/400 training steps are nested-selected.
+The resulting networks contain 1,624 or 6,448 parameters.
+
+```bash
+python3 analyze_neural_low_rank.py \
+  --reference results/logits/bf16-32.kld \
+  --candidate results/logits/q2-32.kld --candidate-name Q2_K_XL \
+  --reference-label BF16 --output-dir results/bf16_neural_low_rank_q2
+```
+
+All four folds selected the null static-bias baseline. Every fold preferred the strongest
+tested weight decay; widths and training durations were unstable. Forced use worsened KL
+to 0.2364235 (-6.75% recovery) and top-10 overlap to 74.7%, while the identically fitted
+16-direction oracle remained at 0.0950399 (57.09% recovery). This is not a full transformer
+test, but it is evidence against spending more capacity on the same saved-logit inputs at
+the current sample size. Results are in
+`results/bf16_neural_low_rank_q2/NEURAL_LOW_RANK.md`.
+
+The local `llama-finetune` tool was inspected as a possible LoRA route. This revision's
+example uses `llama_opt_param_filter_all` and hard next-token training data, then saves a
+full model. It does not provide the needed frozen-quant LoRA distillation against paired
+BF16 distributions. A meaningful adapter experiment will require hidden-state export and
+a custom soft-target training path.
+
+### Cumulative-mass calibration (2026-08-11)
+
+`analyze_mass_calibration.py` measures BF16 probability retained by prefixes sorted under
+Q2, averages the monotonic reference-mass-versus-quant-mass curve on calibration chunks,
+and inverts it for a BF16 top-p=0.95 target. It also nested-selects 2/4/8 quant-entropy bins
+against a global curve and imports the established scalar sampler settings for comparison.
+
+```bash
+python3 analyze_mass_calibration.py \
+  --reference results/logits/bf16-32.kld \
+  --candidate results/logits/q2-32.kld --candidate-name Q2_K_XL \
+  --reference-label BF16 \
+  --sampler-settings-csv results/bf16_gpu32/sampler_grid.csv \
+  --output-dir results/bf16_mass_q2
+```
+
+The global curve consistently implied candidate top-p 0.9364-0.9405 (mean 0.9387) and
+recovered 0.64% held-out prose JS. Entropy conditioning was enabled in only one fold and
+recovered 0.59% after null selection; forced conditioning recovered -0.03%. The global
+mapping retained 94.99% untruncated BF16 mass in the Q2 support, close to the requested
+95%, but remained well behind tuned temperature's 2.22% JS recovery.
+
+The global model was then fitted on all 2,016 prose positions and frozen at top-p=0.938814
+before reading the code capture:
+
+```bash
+python3 evaluate_frozen_mass.py \
+  --train-reference results/logits/bf16-32.kld \
+  --train-candidate results/logits/q2-32.kld \
+  --ood-reference results/logits/bf16-code32.kld \
+  --ood-candidate results/logits/q2-code32.kld \
+  --candidate-name Q2_K_XL --reference-label BF16 \
+  --sampler-settings-csv results/bf16_gpu32/sampler_grid.csv \
+  --output-dir results/bf16_mass_q2
+```
+
+On code it recovered only 0.06% JS, with mean per-chunk reduction 0.0000284 and 95%
+interval [-0.0002487, 0.0003055]. Temperature still recovered 0.79% with an interval above
+zero. Cumulative-mass calibration therefore improves support calibration in-domain but is
+not a portable correction on this evidence. See `results/bf16_mass_q2/MASS_CALIBRATION.md`
+and `results/bf16_mass_q2/FROZEN_MASS.md`.
