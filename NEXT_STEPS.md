@@ -408,3 +408,15 @@ Keep the 21.1 MiB blocks-0-1 model fixed and test a zero-memory addition: refit 
 global sampler temperature against BF16 for hybrid logits. Compare hybrid identity,
 the original Q2-frozen temperature, and hybrid-specific nested calibration; freeze any
 hybrid-specific setting before evaluating code and confirmation documents.
+
+## Completed provisionally: temperature stacked on hybrid
+
+At BF16 target T=0.8/top-p=0.95, applying Q2's previously frozen T=0.7625 to hybrid logits
+recovers 2.33% of sampler JS on held-out prose. Nested hybrid-only fitting selects
+temperatures 0.7550, 0.7675, 0.7500, and 0.7500 (mean 0.7556), but aggregate recovery is
+slightly lower at 2.30%. It beats Q2's setting on only 15/32 chunks; incremental interval
+[-0.0001402, 0.0001051] crosses zero.
+
+No hybrid-specific parameter is promoted. Freeze the already-established T=0.7625 and
+evaluate whether its zero-memory incremental gain transfers across code and confirmation
+documents. See `results/bf16_hybrid_sampler/HYBRID_SAMPLER.md`.

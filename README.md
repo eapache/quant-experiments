@@ -85,6 +85,9 @@ evaluation over 2,016 teacher-forced positions:
 - Extending gate+up into recurrent block 2 adds another 11.6 MiB but raises prose recovery
   only from 5.02% to 5.35%. It improves 18/32 chunks versus the compact model and its paired
   incremental interval crosses zero, so the extension is rejected without confirmation.
+- Stacking the already-frozen Q2 sampler temperature `T=0.7625` on the compact hybrid
+  recovers another 2.33% of BF16 sampler JS on held-out prose at zero memory cost. A
+  hybrid-specific refit averages `T=0.7556` but is slightly worse and is rejected.
 - Cumulative-mass calibration learns a stable global Q2 top-p near 0.939 and recovers
   0.64% sampler JS in held-out prose. Frozen on code, the gain falls to 0.06% with a 95%
   interval crossing zero. Temperature remains the strongest simple portable adjustment.
@@ -128,6 +131,7 @@ distribution, and reference sampler.
 - [`results/bf16_external_confirmation/CORPUS.md`](results/bf16_external_confirmation/CORPUS.md): predeclared external mixed-format set
 - [`results/bf16_external_confirmation/DOCUMENT_CONFIRMATION.md`](results/bf16_external_confirmation/DOCUMENT_CONFIRMATION.md): external mixed-format result
 - [`results/bf16_gate_up_block2/INCREMENTAL_PRECISION.md`](results/bf16_gate_up_block2/INCREMENTAL_PRECISION.md): rejected block-2 extension
+- [`results/bf16_hybrid_sampler/HYBRID_SAMPLER.md`](results/bf16_hybrid_sampler/HYBRID_SAMPLER.md): temperature stacked on compact hybrid
 - [`results/bf16_mass_q2/MASS_CALIBRATION.md`](results/bf16_mass_q2/MASS_CALIBRATION.md): cumulative-mass calibration
 - [`results/bf16_mass_q2/FROZEN_MASS.md`](results/bf16_mass_q2/FROZEN_MASS.md): frozen code-corpus mass check
 - [`results/bf16_gap_q2/GAP_CALIBRATION.md`](results/bf16_gap_q2/GAP_CALIBRATION.md): monotonic rank-conditioned gap calibration

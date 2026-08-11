@@ -1150,3 +1150,17 @@ versus 0.2103633 and 5.02% for blocks 0-1. The extension improves only 18/32 pai
 mean incremental KL reduction is 0.0007433 with interval [-0.0016076, 0.0030942]. It fails
 the predeclared requirement that incremental improvement exclude zero. No confirmation
 captures or benchmark are warranted; the 21.1 MiB blocks-0-1 model remains preferred.
+
+### Temperature compensation stacked on compact hybrid (2026-08-11)
+
+`analyze_hybrid_sampler.py` holds out four eight-chunk prose folds and compares the hybrid
+at BF16's T=0.8/top-p=0.95, the existing Q2-frozen T=0.7625/top-p=0.95, and a temperature
+fit to 256 positions from other chunks. A hybrid-specific temperature can replace the Q2
+setting only if its paired incremental 32-chunk interval excludes zero.
+
+Same-settings sampler JS is 0.0634714. Q2's frozen temperature lowers it to 0.0619946,
+recovering 2.33%. Hybrid-specific folds select 0.7550, 0.7675, 0.7500, and 0.7500 (mean
+0.7556), but held-out JS is slightly worse at 0.0620121 (2.30% recovery). The refit beats
+the Q2 temperature on only 15/32 chunks; mean incremental reduction is -0.0000175 with
+interval [-0.0001402, 0.0001051]. The hybrid-specific setting is rejected. T=0.7625 stacks
+with the model at zero memory cost and remains frozen for code/document evaluation.
