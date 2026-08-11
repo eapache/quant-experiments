@@ -256,6 +256,18 @@ Q8 when the stronger code evidence is worth another 115.9 MiB. The close prose r
 motivates splitting blocks 0 and 1 by tensor family to find which upgrades carry the gain.
 See `results/bf16_donor_precision/HYBRID_PRECISION.md`.
 
+## Completed provisionally: early-block tensor families
+
+The byte-verifying builder now accepts tensor-name regexes. Within Q4 donor blocks 0 and
+1, the six `ffn_*` matrices add 38.7 MiB and recover 4.95% of prose KL, improving 28/32
+chunks with interval [0.005767, 0.016164]. The recurrent family (`attn_gate`, `attn_qkv`,
+and `ssm_*`) adds 28.3 MiB but recovers only 1.91%, improves 21/32 chunks, and has an
+interval crossing zero. FFN delivers 1.90 times as much KL reduction per added MiB.
+
+FFN-only is selected before loading family-level code logits. If it transfers, split its
+up, gate, and down matrices; if it does not, retain the complete Q4 block as the cheaper
+validated design. See `results/bf16_tensor_families/HYBRID_PRECISION.md`.
+
 ## Priority 2: larger-corpus adapter or LoRA distillation
 
 The remaining learned-model test needs substantially more paired and more varied data.
@@ -310,8 +322,7 @@ All advanced experiments should retain the safeguards established by the current
 
 ## Recommended next decisive experiment
 
-The selective-precision result justifies a finer tensor-family ablation inside blocks 0
-and 1, ideally comparing Q4 and Q8 donors per added byte before changing more layers.
+Validate the frozen Q4 FFN-only family on code before splitting individual FFN matrices.
 Separately, collect many independently sourced documents before adding learned model
 capacity; more positions from the same transcript will not resolve workload-level
 uncertainty. For another learned

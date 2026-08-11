@@ -61,6 +61,9 @@ evaluation over 2,016 teacher-forced positions:
   reduction for only 66.9 MiB (3.62%) over Q2. It recovers 4.09% on code versus Q8's 5.41%,
   but its code chunk interval narrowly crosses zero. Q4 and Q8 donor generation speed is
   effectively identical, making Q4 the memory Pareto point and Q8 the better-supported one.
+- Within the two Q4 blocks, the six FFN matrices recover 4.95% of prose KL for 38.7 MiB,
+  carrying 72.7% of the full Q4 hybrid's reduction. The recurrent/SSM family recovers only
+  1.91% for 28.3 MiB and has an interval crossing zero. FFN-only is frozen for code testing.
 - Cumulative-mass calibration learns a stable global Q2 top-p near 0.939 and recovers
   0.64% sampler JS in held-out prose. Frozen on code, the gain falls to 0.06% with a 95%
   interval crossing zero. Temperature remains the strongest simple portable adjustment.
@@ -92,6 +95,7 @@ distribution, and reference sampler.
 - [`results/bf16_hybrid_precision/HYBRID_PRECISION.md`](results/bf16_hybrid_precision/HYBRID_PRECISION.md): selective early-block precision/size/speed tradeoff
 - [`results/bf16_hybrid_precision/FROZEN_HYBRID_PRECISION.md`](results/bf16_hybrid_precision/FROZEN_HYBRID_PRECISION.md): frozen code-corpus hybrid check
 - [`results/bf16_donor_precision/HYBRID_PRECISION.md`](results/bf16_donor_precision/HYBRID_PRECISION.md): Q4-versus-Q8 donor precision tradeoff
+- [`results/bf16_tensor_families/HYBRID_PRECISION.md`](results/bf16_tensor_families/HYBRID_PRECISION.md): early-block FFN-versus-SSM ablation
 - [`results/bf16_mass_q2/MASS_CALIBRATION.md`](results/bf16_mass_q2/MASS_CALIBRATION.md): cumulative-mass calibration
 - [`results/bf16_mass_q2/FROZEN_MASS.md`](results/bf16_mass_q2/FROZEN_MASS.md): frozen code-corpus mass check
 - [`results/bf16_gap_q2/GAP_CALIBRATION.md`](results/bf16_gap_q2/GAP_CALIBRATION.md): monotonic rank-conditioned gap calibration

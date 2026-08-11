@@ -941,3 +941,31 @@ at 5408.8/221.46, and early-Q8-2 at 5526.5/221.64. Prompt differences are within
 variation; Q4 and Q8 donor generation are effectively tied at -3.80% and -3.73% versus
 Q2. Lower donor precision saves 115.9 MiB but not measurable runtime. Exact aggregate,
 chunk, identity, and benchmark data are in `results/bf16_donor_precision/`.
+
+### Early-block tensor-family ablation (2026-08-11)
+
+`build_hybrid_gguf.py` now accepts repeatable `--include` regular expressions and records
+them in GGUF metadata. Selection, output type, and every raw tensor payload remain verified.
+Q4 donor blocks 0 and 1 were split into disjoint FFN and recurrent/SSM families:
+
+```bash
+PYTHONPATH=/home/eapache/src/llama.cpp/gguf-py python3 build_hybrid_gguf.py \
+  --base /home/eapache/src/llama.cpp/models/custom/Qwen3.5-4B/Qwen3.5-4B-UD-Q2_K_XL.gguf \
+  --donor /home/eapache/src/llama.cpp/models/custom/Qwen3.5-4B/Qwen3.5-4B-UD-Q4_K_XL.gguf \
+  --layers 0 1 --include '\.ffn_' \
+  --output results/models/Qwen3.5-4B-Q2-earlyQ4-2-ffn.gguf
+
+# Repeat with --include '\.(attn_gate|attn_qkv|ssm_)' and an -ssm output name.
+```
+
+The FFN model replaces six tensors, adds 40,550,624 bytes (38.7 MiB), and has SHA-256
+`8824df80008db8ae498b7a0443a2dc98a1abe76582d6413f297d1df16c818982`. The SSM model
+replaces 18 tensors, adds 29,634,784 bytes (28.3 MiB), and has SHA-256
+`f7c15d9273146974a5dce0a2dafd9814e4be9f662472d481b661d151301543d4`.
+
+On the 32 prose chunks, FFN-only reduces KL from 0.2214713 to 0.2105060, recovering 4.95%.
+It improves 28/32 chunks with interval [0.0057667, 0.0161639]. SSM-only reaches 0.2172442,
+recovering 1.91%, and improves 21/32 chunks with interval [-0.0002241, 0.0086782]. FFN
+carries 72.7% of the full Q4 hybrid's absolute KL reduction with 57.8% of its bytes, and
+delivers 1.90 times the SSM family's KL reduction per added MiB. It is frozen for code
+validation before splitting the three FFN matrix types.

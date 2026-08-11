@@ -90,8 +90,9 @@ def write_report(path: Path, summary: list[dict]) -> None:
     lines = [
         "# Selective early-block precision",
         "",
-        "The hybrids retain every tensor byte from Q2_K_XL except complete early recurrent",
-        "blocks copied from a shape-identical higher-precision GGUF. The builder reopens each model",
+        "The hybrids retain every tensor byte from Q2_K_XL except selected tensors from early",
+        "recurrent blocks copied from a shape-identical higher-precision GGUF. The builder reopens",
+        "each model",
         "and verifies every raw tensor payload against its intended source. This experiment was",
         "chosen from residual-state localization without inspecting hybrid output logits.",
         "",
@@ -122,7 +123,7 @@ def write_report(path: Path, summary: list[dict]) -> None:
         if len(hybrids) >= 3:
             lines += [
                 "",
-                "Marginal KL reduction per added MiB for blocks 1, 2, and 3 is "
+                "Marginal KL reduction per added MiB between successive listed hybrids is "
                 + ", ".join(f"{row['marginal_kl_per_mib']:.8f}" for row in hybrids[:3])
                 + ", respectively.",
             ]
