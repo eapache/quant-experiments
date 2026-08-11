@@ -285,6 +285,17 @@ Because gate and up are both positive while down is negative, test the predeclar
 use individual matrix code captures in that choice. See
 `results/bf16_ffn_matrices/HYBRID_PRECISION.md`.
 
+## Completed provisionally: gate+up combination
+
+The predeclared Q4 gate+up model replaces four matrices across blocks 0 and 1 and adds
+21.1 MiB (1.14%) to Q2. It recovers 5.02% of prose KL, improves 27/32 chunks, and has
+interval [0.005122, 0.017094]. It slightly beats the complete 38.7 MiB FFN upgrade's 4.95%,
+confirming that the Q4 down matrices are unnecessary for this workload.
+
+Gate+up is frozen as the primary sub-25-MiB design for code. Up-only remains a secondary
+10.5 MiB memory endpoint; code must not be used to switch the primary designation. See
+`results/bf16_ffn_gate_up/HYBRID_PRECISION.md`.
+
 ## Priority 2: larger-corpus adapter or LoRA distillation
 
 The remaining learned-model test needs substantially more paired and more varied data.
@@ -339,8 +350,8 @@ All advanced experiments should retain the safeguards established by the current
 
 ## Recommended next decisive experiment
 
-Test the predeclared Q4 gate+up combination on prose, then freeze either it or up-only for
-code without inspecting the rejected alternatives there.
+Validate the frozen Q4 gate+up design on code and benchmark it against Q2, up-only, and the
+validated all-FFN model.
 Separately, collect many independently sourced documents before adding learned model
 capacity; more positions from the same transcript will not resolve workload-level
 uncertainty. For another learned

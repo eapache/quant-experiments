@@ -1017,3 +1017,14 @@ The up and gate reductions sum to 0.0117510, slightly above the complete FFN mod
 0.0109653 reduction, while down is harmful alone. A 21.1 MiB gate+up model is therefore
 predeclared as the next prose test. No individual matrix code captures are loaded before
 choosing between that combination and the 10.5 MiB up-only point.
+
+The predeclared combination was then built with
+`--include '\.(ffn_gate|ffn_up)\.'`. It replaces four tensors, adds 22,118,624 bytes
+(21.1 MiB, 1.14%), and has SHA-256
+`913dc3d9e89b560e4bd806f2cb65e9e7f9502cd2da80969b6e83029947462c5c`.
+
+On prose, gate+up reaches KL 0.2103633, recovering 5.02%; it improves 27/32 chunks and has
+interval [0.0051220, 0.0170939]. This slightly improves on all-FFN KL 0.2105060 despite
+removing 18,432,224 bytes of down matrices. Gate+up is selected as the primary sub-25-MiB
+model before loading code. Up-only remains a smaller diagnostic Pareto point, but code
+results cannot promote it over the preselected combination.
