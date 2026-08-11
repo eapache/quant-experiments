@@ -221,7 +221,7 @@ The all-prose vector was frozen on the independent code capture. It reduces KL f
 0.0003743 with descriptive interval [-0.0017000, 0.0024486]. This does not establish a
 portable gain. See `results/bf16_mean_control_q2/FROZEN_MEAN_CONTROL.md`.
 
-## Completed provisionally: selective early-block precision
+## Completed: selective early-block precision
 
 `build_hybrid_gguf.py` preserves the complete Q2 GGUF except for selected `blk.N.*`
 tensors copied byte-for-byte from the shape-identical Q8 model. It validates identical
@@ -235,9 +235,13 @@ F16-heavy donor tensors make the third block much less size-efficient. The two-b
 is therefore selected before examining its independent code logits. See
 `results/bf16_hybrid_precision/HYBRID_PRECISION.md`.
 
-The pending decisive check is to run that frozen two-block model on the existing Python
-code corpus. The one- and three-block curves may be reported as diagnostics, but must not
-change the preselected primary design.
+Frozen on the existing Python code corpus, the preselected two-block model recovers 5.41%
+of KL and 5.55% of JS, improves 27/32 chunks, and has a descriptive chunk-level KL interval
+[0.001434, 0.017960]. The one- and three-block diagnostic points recover 1.64% and 6.79%,
+respectively. Q4 recovers 92.87% but retains its much larger size and throughput costs.
+This is the first cheap correction here with a clear gain on both workloads, although the
+code interval still reuses chunks from one file rather than independent code projects. See
+`results/bf16_hybrid_precision/FROZEN_HYBRID_PRECISION.md`.
 
 ## Priority 2: larger-corpus adapter or LoRA distillation
 
@@ -293,10 +297,11 @@ All advanced experiments should retain the safeguards established by the current
 
 ## Recommended next decisive experiment
 
-First validate the frozen early-Q8-2 hybrid on the independent code corpus and compare its
-accuracy, size, and throughput with Q2 and Q4. After that, collect many independently
-sourced documents before adding learned model capacity; more positions from the same
-transcript will not resolve workload-level uncertainty. For another learned
+The selective-precision result justifies a finer tensor-family ablation inside blocks 0
+and 1, ideally comparing Q4 and Q8 donors per added byte before changing more layers.
+Separately, collect many independently sourced documents before adding learned model
+capacity; more positions from the same transcript will not resolve workload-level
+uncertainty. For another learned
 test, optimize held-out BF16 KL directly rather than squared error to non-identifiable
 per-row oracle coefficients, and retain equal-rank random controls. Reuse the hidden-state
 extractor only after this data expansion. If a direct-KL final-state map is still rejected,

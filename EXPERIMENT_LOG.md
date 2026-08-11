@@ -880,3 +880,35 @@ because it offers the best measured KL reduction per total added byte.
 Exact sizes and SHA-256 identities are recorded in
 `results/bf16_hybrid_precision/hybrid_models.csv`; raw benchmark aggregates are in
 `hybrid_throughput.csv`. The hybrid model files themselves remain ignored.
+
+The two-block design was then kept fixed and all three hybrids were captured on the exact
+source of the existing independent code baseline:
+
+```bash
+/home/eapache/src/llama.cpp/build/bin/llama-perplexity \
+  -m results/models/Qwen3.5-4B-Q2-earlyQ8-2.gguf \
+  -f chats/quant-sampler-compensation-lab/quant_sampler_lab.py \
+  -c 128 -b 128 -ub 128 --chunks 32 -t 12 --no-warmup \
+  -dev CUDA0 -sm none -ngl all \
+  --kl-divergence-base results/logits/q2-code-earlyq8-2.kld
+
+python3 evaluate_frozen_hybrid_precision.py \
+  --reference results/logits/bf16-code32.kld \
+  --baseline results/logits/q2-code32.kld \
+  --variant early-Q8-1 results/logits/q2-code-earlyq8-1.kld \
+  --variant early-Q8-2 results/logits/q2-code-earlyq8-2.kld \
+  --variant early-Q8-3 results/logits/q2-code-earlyq8-3.kld \
+  --benchmark Q4_K_XL results/logits/q4-code32.kld \
+  --primary early-Q8-2 --output-dir results/bf16_hybrid_precision
+```
+
+The preselected early-Q8-2 hybrid reduces code KL from 0.1792153 to 0.1695180, recovering
+5.41%; JS recovery is 5.55%. It improves 27/32 chunks, and mean chunk reduction 0.0096974
+has a descriptive interval [0.0014342, 0.0179605]. Top-10 overlap rises from 75.6% to
+76.3%, while top-1 is unchanged at 84.0%. The adjacent one- and three-block diagnostics
+recover 1.64% and 6.79%; Q4 recovers 92.87%. The primary result transfers in direction and
+meaningful magnitude, though one reused code file cannot establish project-level variance.
+
+During evaluation, a code position with fewer than ten explicit KLD head tokens exposed an
+old top-overlap edge case. `analyze_sparse.metrics` now compares the largest observable
+top-k, up to ten, instead of failing or inventing an ordering among clipped tail ties.

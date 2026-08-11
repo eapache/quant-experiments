@@ -23,7 +23,7 @@ class FrozenHybridPrecisionTest(unittest.TestCase):
             "chunk_interval_low": 0.01, "chunk_interval_high": 0.03,
         }
         diagnostic = {
-            **primary, "label": "early-Q8-3", "role": "hybrid",
+            **primary, "label": "early-Q8-3", "role": "diagnostic",
             "is_primary": False, "kl": 0.8,
         }
         with tempfile.TemporaryDirectory() as directory:
@@ -32,7 +32,7 @@ class FrozenHybridPrecisionTest(unittest.TestCase):
             text = path.read_text()
         self.assertIn("**early-Q8-2** was selected on prose", text)
         self.assertIn("early-Q8-2 | preselected", text)
-        self.assertIn("early-Q8-3 | hybrid", text)
+        self.assertIn("early-Q8-3 | diagnostic", text)
 
 
 if __name__ == "__main__":

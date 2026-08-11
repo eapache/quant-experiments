@@ -50,7 +50,8 @@ def evaluate(reference: Path, baseline: Path,
             mean = float(reductions.mean())
             half_width = float(2.040 * reductions.std(ddof=1) / np.sqrt(len(reductions)))
             summary.append({
-                "label": label, "role": ("preselected" if label == primary else role),
+            "label": label, "role": ("preselected" if label == primary else
+                                      ("diagnostic" if role == "hybrid" else role)),
                 "is_primary": label == primary,
                 "kl_recovery": 1.0 - aggregate["kl"] / raw["kl"],
                 "js_recovery": 1.0 - aggregate["js"] / raw["js"],
