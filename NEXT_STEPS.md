@@ -16,10 +16,11 @@ quantization-compensation hierarchy and several higher-capacity residual models:
 - monotonic direct and consistent pairwise rank-gap calibration;
 - a 2,560-feature final-hidden-state ridge map to residual amplitudes.
 
-Deployable methods recovered only a few percent of divergence toward BF16. The low-rank
-oracle recovered much more, although matched random directions explain nearly all of that
-oracle recovery. Ridge, nearest-neighbor posterior, and tiny nonlinear quant-only predictors
-did not improve. The following ideas remain untested on real GGUF logits.
+Deployable sampler methods recovered only a few percent of divergence toward BF16. The
+low-rank oracle recovered much more, although matched random directions explain nearly all
+of that oracle recovery. Ridge, nearest-neighbor posterior, and tiny nonlinear quant-only
+predictors did not improve. Selectively upgrading the first two recurrent blocks is the
+first model-side intervention to recover a clear 7.19% of KL at modest cost.
 
 ## Completed: predictive low-rank logit denoiser
 
@@ -220,6 +221,24 @@ The all-prose vector was frozen on the independent code capture. It reduces KL f
 0.0003743 with descriptive interval [-0.0017000, 0.0024486]. This does not establish a
 portable gain. See `results/bf16_mean_control_q2/FROZEN_MEAN_CONTROL.md`.
 
+## Completed provisionally: selective early-block precision
+
+`build_hybrid_gguf.py` preserves the complete Q2 GGUF except for selected `blk.N.*`
+tensors copied byte-for-byte from the shape-identical Q8 model. It validates identical
+tensor names and shapes, reopens the result, and hashes every raw tensor payload against
+its intended source.
+
+On held-out prose positions, replacing blocks 0 and 1 recovers 7.19% of BF16-relative KL,
+improves 29/32 chunks, adds 182.8 MiB (9.88% over Q2), and slows generation by 4.59%.
+Replacing block 2 as well reaches 8.83%, but costs 330.7 MiB and slows generation 8.34%; its
+F16-heavy donor tensors make the third block much less size-efficient. The two-block model
+is therefore selected before examining its independent code logits. See
+`results/bf16_hybrid_precision/HYBRID_PRECISION.md`.
+
+The pending decisive check is to run that frozen two-block model on the existing Python
+code corpus. The one- and three-block curves may be reported as diagnostics, but must not
+change the preselected primary design.
+
 ## Priority 2: larger-corpus adapter or LoRA distillation
 
 The remaining learned-model test needs substantially more paired and more varied data.
@@ -274,8 +293,10 @@ All advanced experiments should retain the safeguards established by the current
 
 ## Recommended next decisive experiment
 
-Collect many independently sourced documents before adding model capacity; more positions
-from the same transcript will not resolve workload-level uncertainty. For another learned
+First validate the frozen early-Q8-2 hybrid on the independent code corpus and compare its
+accuracy, size, and throughput with Q2 and Q4. After that, collect many independently
+sourced documents before adding learned model capacity; more positions from the same
+transcript will not resolve workload-level uncertainty. For another learned
 test, optimize held-out BF16 KL directly rather than squared error to non-identifiable
 per-row oracle coefficients, and retain equal-rank random controls. Reuse the hidden-state
 extractor only after this data expansion. If a direct-KL final-state map is still rejected,

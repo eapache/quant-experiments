@@ -832,3 +832,51 @@ Code KL falls from 0.1792153 to 0.1788410, or 0.21% recovery. Only 19/32 chunks 
 mean per-chunk reduction is 0.0003743 with descriptive interval
 [-0.0017000, 0.0024486]. The tiny state-side correction is not reliably portable. See
 `results/bf16_mean_control_q2/FROZEN_MEAN_CONTROL.md`.
+
+### Selective early-block precision (2026-08-11)
+
+Q2 and Q8 contain the same 426 tensor names and shapes. `build_hybrid_gguf.py` copies Q2
+metadata and all unselected tensor payloads, substitutes complete early `blk.N.*` payloads
+from Q8, then reopens the result and SHA-256 verifies all 426 raw tensor regions against
+the intended source. The three ignored, reproducible model artifacts were built with:
+
+```bash
+PYTHONPATH=/home/eapache/src/llama.cpp/gguf-py python3 build_hybrid_gguf.py \
+  --base /home/eapache/src/llama.cpp/models/custom/Qwen3.5-4B/Qwen3.5-4B-UD-Q2_K_XL.gguf \
+  --donor /home/eapache/src/llama.cpp/models/custom/Qwen3.5-4B/Qwen3.5-4B-UD-Q8_K_XL.gguf \
+  --layers 0,1 --output results/models/Qwen3.5-4B-Q2-earlyQ8-2.gguf
+```
+
+The one-, two-, and three-block hybrids add 91.4, 182.8, and 330.7 MiB to the 1.808 GiB
+Q2 file. The nonlinear third increment comes from F16 tensors in Q8 block 2. Matching
+32-chunk prose captures were generated with the standard CUDA0 command and compared to the
+existing BF16 and Q2 captures:
+
+```bash
+/home/eapache/src/llama.cpp/build/bin/llama-perplexity \
+  -m results/models/Qwen3.5-4B-Q2-earlyQ8-2.gguf -f chats/first.txt \
+  -c 128 -b 128 -ub 128 --chunks 32 -t 12 --no-warmup \
+  -dev CUDA0 -sm none -ngl all \
+  --kl-divergence-base results/logits/q2-earlyq8-2-32.kld
+
+python3 analyze_hybrid_precision.py \
+  --reference results/logits/bf16-32.kld \
+  --base-logits results/logits/q2-32.kld \
+  --base-model /home/eapache/src/llama.cpp/models/custom/Qwen3.5-4B/Qwen3.5-4B-UD-Q2_K_XL.gguf \
+  --variant early-Q8-1 results/logits/q2-earlyq8-1-32.kld results/models/Qwen3.5-4B-Q2-earlyQ8-1.gguf \
+  --variant early-Q8-2 results/logits/q2-earlyq8-2-32.kld results/models/Qwen3.5-4B-Q2-earlyQ8-2.gguf \
+  --variant early-Q8-3 results/logits/q2-earlyq8-3-32.kld results/models/Qwen3.5-4B-Q2-earlyQ8-3.gguf \
+  --benchmark Q4_K_XL results/logits/q4-32.kld /home/eapache/src/llama.cpp/models/custom/Qwen3.5-4B/Qwen3.5-4B-UD-Q4_K_XL.gguf \
+  --output-dir results/bf16_hybrid_precision
+```
+
+The hybrids recover 3.33%, 7.19%, and 8.83% of raw Q2 KL, improving 26, 29, and 30 of 32
+chunks. All three descriptive chunk intervals exclude zero. Five-repeat `llama-bench`
+measurements at pp128/tg32 show generation slowdowns of 2.54%, 4.59%, and 8.34%; prompt
+throughput differences are within run variability. Q4 recovers 92.53% but adds 926.3 MiB
+and slows generation 17.42%. The two-block hybrid is preselected for frozen code validation
+because it offers the best measured KL reduction per total added byte.
+
+Exact sizes and SHA-256 identities are recorded in
+`results/bf16_hybrid_precision/hybrid_models.csv`; raw benchmark aggregates are in
+`hybrid_throughput.csv`. The hybrid model files themselves remain ignored.

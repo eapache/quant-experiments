@@ -52,6 +52,10 @@ evaluation over 2,016 teacher-forced positions:
   the interval crosses zero. Frozen on code, it recovers 0.21% with only 19/32 chunks
   improved and another interval crossing zero. Correcting average hidden-state geometry is
   therefore not a sufficient proxy for correcting output distributions.
+- Replacing just the first two complete Q2 recurrent blocks with byte-identical Q8 donor
+  tensors recovers 7.19% of BF16-relative prose KL across 29/32 chunks. The hybrid adds
+  182.8 MiB (9.88%) and reduces generation throughput by 4.59%. A third block has sharply
+  worse marginal size efficiency, so the two-block hybrid is frozen for code validation.
 - Cumulative-mass calibration learns a stable global Q2 top-p near 0.939 and recovers
   0.64% sampler JS in held-out prose. Frozen on code, the gain falls to 0.06% with a 95%
   interval crossing zero. Temperature remains the strongest simple portable adjustment.
@@ -80,6 +84,7 @@ distribution, and reference sampler.
 - [`results/bf16_layer_drift_q2/LAYER_DRIFT.md`](results/bf16_layer_drift_q2/LAYER_DRIFT.md): layerwise residual-stream localization
 - [`results/bf16_mean_control_q2/MEAN_CONTROL.md`](results/bf16_mean_control_q2/MEAN_CONTROL.md): 10 KiB residual control-vector test
 - [`results/bf16_mean_control_q2/FROZEN_MEAN_CONTROL.md`](results/bf16_mean_control_q2/FROZEN_MEAN_CONTROL.md): frozen code-corpus control check
+- [`results/bf16_hybrid_precision/HYBRID_PRECISION.md`](results/bf16_hybrid_precision/HYBRID_PRECISION.md): selective early-block precision/size/speed tradeoff
 - [`results/bf16_mass_q2/MASS_CALIBRATION.md`](results/bf16_mass_q2/MASS_CALIBRATION.md): cumulative-mass calibration
 - [`results/bf16_mass_q2/FROZEN_MASS.md`](results/bf16_mass_q2/FROZEN_MASS.md): frozen code-corpus mass check
 - [`results/bf16_gap_q2/GAP_CALIBRATION.md`](results/bf16_gap_q2/GAP_CALIBRATION.md): monotonic rank-conditioned gap calibration
