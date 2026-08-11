@@ -112,6 +112,7 @@ distribution, and reference sampler.
 - [`results/bf16_ffn_gate_up/FROZEN_HYBRID_PRECISION.md`](results/bf16_ffn_gate_up/FROZEN_HYBRID_PRECISION.md): frozen compact gate+up code check
 - [`results/bf16_gate_up_layers/HYBRID_PRECISION.md`](results/bf16_gate_up_layers/HYBRID_PRECISION.md): block-0-versus-block-1 gate+up split
 - [`results/bf16_gate_up_layers/FROZEN_HYBRID_PRECISION.md`](results/bf16_gate_up_layers/FROZEN_HYBRID_PRECISION.md): frozen single-block rejection
+- [`results/bf16_document_confirmation/CORPUS.md`](results/bf16_document_confirmation/CORPUS.md): predeclared four-document confirmation set
 - [`results/bf16_mass_q2/MASS_CALIBRATION.md`](results/bf16_mass_q2/MASS_CALIBRATION.md): cumulative-mass calibration
 - [`results/bf16_mass_q2/FROZEN_MASS.md`](results/bf16_mass_q2/FROZEN_MASS.md): frozen code-corpus mass check
 - [`results/bf16_gap_q2/GAP_CALIBRATION.md`](results/bf16_gap_q2/GAP_CALIBRATION.md): monotonic rank-conditioned gap calibration

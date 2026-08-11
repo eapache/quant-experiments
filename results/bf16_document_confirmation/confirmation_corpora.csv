@@ -1,0 +1,5 @@
+label,path,bytes,lines,sha256,chunks,context
+real-logits,analyze_real_logits.py,22120,473,592efc346c0f2800f259eb2e0ac39a8124c031f9f07ece582841d80ef676f260,32,128
+low-rank-controls,analyze_low_rank_structure.py,19585,377,fb614907b6ac11b125bc8959c6081f4410b220161cfe1e584c5325f7d197bd8e,32,128
+gap-calibration,analyze_gap_calibration.py,19049,387,479a7f168cb8420c12fcad9e6d482c1b973e26056083e2f514fbad4e7a4e015d,32,128
+hidden-adapter,analyze_hidden_adapter.py,17137,323,70c3ee0c1323eba3e8f9b6d62595a9f1bbe4031819d7af348dd6a0e9051c6528,32,128

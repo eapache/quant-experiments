@@ -372,7 +372,10 @@ All advanced experiments should retain the safeguards established by the current
 
 Retain the two-block Q4 gate+up model as the compact recommendation. Before more
 same-corpus tensor selection, validate it across multiple independently sourced prose and
-code workloads; the current chunk intervals measure positions within only two files.
+code workloads; the current chunk intervals measure positions within only two files. A
+four-document Python confirmation set is now frozen in
+`results/bf16_document_confirmation/CORPUS.md`; evaluate every listed document without
+replacement or removal.
 Separately, collect many independently sourced documents before adding learned model
 capacity; more positions from the same transcript will not resolve workload-level
 uncertainty. For another learned

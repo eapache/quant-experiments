@@ -1071,3 +1071,17 @@ used 20 repeats. Q2, block 1, and blocks 0+1 measured 5759.6/225.84, 5819.2/224.
 than run standard deviations of 2.42-3.45 tok/s. The two-block 21.1 MiB model remains the
 smallest design with a clear gain on both workloads; further selection should wait for
 multiple independent documents rather than reusing these same two files.
+
+### Frozen multi-document confirmation set (2026-08-11)
+
+Before generating any further logits, four unused versioned Python documents were fixed as
+a confirmation set: `analyze_real_logits.py`, `analyze_low_rank_structure.py`,
+`analyze_gap_calibration.py`, and `analyze_hidden_adapter.py`. Their exact SHA-256 values,
+sizes, and intended 32 chunks at context 128 are recorded in
+`results/bf16_document_confirmation/confirmation_corpora.csv`.
+
+The primary model remains the already-selected two-block Q4 gate+up hybrid. No document
+may be removed or substituted based on its outcome. The analysis will report each whole
+document separately, a pooled position result, and variation across four documents. This
+is a confirmation across distinct implementations, not a claim about independent authors
+or non-Python workloads.
