@@ -380,12 +380,23 @@ This confirms the compact hybrid beyond the two selection files, though all conf
 documents remain Python implementations from one repository. See
 `results/bf16_document_confirmation/DOCUMENT_CONFIRMATION.md`.
 
+## Completed: external mixed-format confirmation
+
+The fixed hybrid improves all four external documents. KL recovery is 2.35% on stdlib
+Python, 2.29% on llama.cpp C++, 7.75% on server Markdown, and 1.78% on GPL prose. Pooled
+over 8,064 positions, KL falls from 0.4842381 to 0.4713369 (2.66% recovery); JS recovery is
+2.46%. Mean absolute document reduction is 0.0129012, but its four-document interval
+[-0.0022326, 0.0280350] crosses zero because magnitudes vary sharply by format.
+
+Direction is now positive on 8/8 predeclared confirmation documents across two sets. The
+first set's document interval excludes zero; the more heterogeneous external set is
+supportive but inconclusive on its own. See
+`results/bf16_external_confirmation/DOCUMENT_CONFIRMATION.md`.
+
 ## Recommended next decisive experiment
 
-Retain the two-block Q4 gate+up model as the compact recommendation. Freeze a second
-confirmation set outside this repository and include different source formats before more
-tensor selection. This will test whether the gain extends beyond one Python authoring
-style. That external Python/C++/Markdown/legal-prose set is now predeclared in
-`results/bf16_external_confirmation/CORPUS.md`. Separately, collect substantially more
-paired data before adding learned model capacity; more positions from the same sources will
-not resolve workload-level uncertainty.
+Retain blocks 0-1 gate+up as the compact recommendation. Test one predeclared extension:
+add the same two Q4 matrices in block 2 for another 10.5 MiB. Residual localization showed
+the third recurrent block participates in the early error jump, while full-block Q8 there
+was inefficient because unrelated tensors became F16. Select using the original prose
+corpus only, then keep any decision frozen across the confirmation documents.

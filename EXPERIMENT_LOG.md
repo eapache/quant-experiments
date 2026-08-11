@@ -1127,3 +1127,11 @@ Python 3.12's `argparse.py`, llama.cpp's `common/sampling.cpp`, llama.cpp server
 and the system GPLv3 legal text. Exact paths, sizes, line counts, and SHA-256 values are in
 `results/bf16_external_confirmation/confirmation_corpora.csv`. Each will use 32 chunks at
 context 128, and every predeclared result will be retained.
+
+The standard BF16/Q2/gate+up capture template produced 2,016 aligned positions for each
+source. The hybrid recovers 2.35% KL on stdlib argparse, 2.29% on llama.cpp sampling C++,
+7.75% on server Markdown, and 1.78% on GPLv3 prose. All 4/4 whole documents improve.
+Pooled KL falls from 0.4842381 to 0.4713369 over 8,064 positions (2.66%); pooled JS recovery
+is 2.46%. Mean absolute whole-document KL reduction is 0.0129012 with interval
+[-0.0022326, 0.0280350]. The cross-format direction is consistent, but the wide magnitude
+variation makes this four-document set inconclusive by itself.

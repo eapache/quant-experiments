@@ -78,6 +78,10 @@ evaluation over 2,016 teacher-forced positions:
   Across 8,064 positions, the 21.1 MiB model recovers 4.02% pooled KL; mean whole-document
   reduction has interval [0.00264, 0.01154]. This is stronger portability evidence than the
   earlier single-file chunk intervals, while still limited to one repository and language.
+- A second predeclared external set also improves all 4/4 inputs—stdlib Python, llama.cpp
+  C++, technical Markdown, and GPL prose—with 2.66% pooled KL recovery. Its document-level
+  interval crosses zero, so this is consistent cross-format direction rather than a precise
+  estimate of a universal effect.
 - Cumulative-mass calibration learns a stable global Q2 top-p near 0.939 and recovers
   0.64% sampler JS in held-out prose. Frozen on code, the gain falls to 0.06% with a 95%
   interval crossing zero. Temperature remains the strongest simple portable adjustment.
@@ -119,6 +123,7 @@ distribution, and reference sampler.
 - [`results/bf16_document_confirmation/CORPUS.md`](results/bf16_document_confirmation/CORPUS.md): predeclared four-document confirmation set
 - [`results/bf16_document_confirmation/DOCUMENT_CONFIRMATION.md`](results/bf16_document_confirmation/DOCUMENT_CONFIRMATION.md): frozen multi-document result
 - [`results/bf16_external_confirmation/CORPUS.md`](results/bf16_external_confirmation/CORPUS.md): predeclared external mixed-format set
+- [`results/bf16_external_confirmation/DOCUMENT_CONFIRMATION.md`](results/bf16_external_confirmation/DOCUMENT_CONFIRMATION.md): external mixed-format result
 - [`results/bf16_mass_q2/MASS_CALIBRATION.md`](results/bf16_mass_q2/MASS_CALIBRATION.md): cumulative-mass calibration
 - [`results/bf16_mass_q2/FROZEN_MASS.md`](results/bf16_mass_q2/FROZEN_MASS.md): frozen code-corpus mass check
 - [`results/bf16_gap_q2/GAP_CALIBRATION.md`](results/bf16_gap_q2/GAP_CALIBRATION.md): monotonic rank-conditioned gap calibration

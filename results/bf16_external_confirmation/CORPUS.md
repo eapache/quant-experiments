@@ -17,3 +17,7 @@ gate+up hybrid in blocks 0 and 1.
 
 The files are locally installed inputs rather than copied repository assets. Their hashes
 make this run auditable, but another machine may have different versions or paths.
+
+The completed result is in `DOCUMENT_CONFIRMATION.md`. All four formats improve and pooled
+KL recovery is 2.66%, but the descriptive interval across four whole-document absolute
+reductions crosses zero because effect magnitude varies substantially by format.
