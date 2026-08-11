@@ -12,7 +12,8 @@ quantization-compensation hierarchy and several higher-capacity residual models:
 - a nested, head-restricted low-rank denoiser with oracle and quant-only amplitudes;
 - global and entropy-conditioned cumulative-mass calibration;
 - a conditional empirical posterior over correlated rank-wise head errors;
-- a 1,624-6,448 parameter nonlinear predictor of low-rank residual amplitudes.
+- a 1,624-6,448 parameter nonlinear predictor of low-rank residual amplitudes;
+- monotonic direct and consistent pairwise rank-gap calibration.
 
 Deployable methods recovered only a few percent of divergence toward BF16. The low-rank
 oracle recovered much more, but ridge, nearest-neighbor posterior, and tiny nonlinear
@@ -89,27 +90,26 @@ that the needed context is absent from, or not learnable from, the saved output
 distribution at this sample size. A full transformer over the same logits is not the next
 efficient step without a substantially larger paired corpus.
 
-## Priority 2: nonlinear and pairwise gap calibration
+## Completed: nonlinear and pairwise gap calibration
 
-The tested gap buckets were a coarse additive correction and did not help. Stronger
-variants remain open:
+`analyze_gap_calibration.py` fits weighted monotonic piecewise-linear mappings from
+candidate gaps to BF16 gaps after temperature and static-token correction. The direct
+variant maps top-anchor gaps. The pairwise variant maps every plausible head-token pair
+and reconstructs one consistent logit vector. Head size, knot count, rank conditioning,
+and correction strength are nested-selected with a null option.
 
-- monotonic spline mapping from quant gap to estimated reference gap;
-- rank-conditioned splines;
-- entropy- or margin-conditioned splines;
-- pairwise-gap regression among the plausible top tokens followed by consistent-logit
-  reconstruction.
+Direct calibration is harmful on held-out prose. Pairwise calibration moves KL from the
+static-bias baseline's 0.2178015 to 0.2177002, or 1.70% rather than 1.65% recovery from
+raw. The incremental 0.000101 gain has a four-block 95% interval crossing zero, while
+selected head size and strength are unstable. A prose-fitted head-8 transform frozen on
+code improves its static-bias baseline by only 0.000051 KL, interval
+[-0.000190, 0.000292]. The static bias itself transfers poorly, worsening raw code KL by
+4.72%. Gap calibration therefore does not provide repeatable or portable improvement.
 
-Constrain mappings to remain monotonic unless held-out evidence clearly supports rank
-reversals. Otherwise a flexible fit can manufacture unstable ordering changes.
+## Priority 2: hidden-state adapter or LoRA distillation
 
-This is now the best remaining sampler-only experiment: it is more targeted and
-identifiable than another generic amplitude predictor.
-
-## Priority 3: hidden-state adapter or LoRA distillation
-
-If sampler-only gap calibration also fails, expose the Q2 model's final hidden state and
-train a small residual head, last-block adapter, or LoRA against BF16 soft targets. This
+The next useful source of information is the Q2 model's final hidden state. Train a small
+residual head, last-block adapter, or LoRA against BF16 soft targets. This
 is qualitatively different from a tiny transformer over logits: the hidden state can
 contain context information erased by the quantized output distribution.
 
@@ -126,7 +126,7 @@ hard next-token labels, rather than fitting a LoRA on a frozen quantized base ag
 distributions. A real adapter experiment needs hidden-state export and a distillation
 training path.
 
-## Priority 4: token-feature correction
+## Priority 3: token-feature correction
 
 The static vocabulary bias used only paired output residuals. A more transferable token
 correction could use properties of the quantized output row or token:
@@ -158,9 +158,7 @@ All advanced experiments should retain the safeguards established by the current
 
 ## Recommended next decisive experiment
 
-Test monotonic rank-conditioned gap calibration on Q2. Fit smooth mappings from quantized
-top-token gaps to expected BF16 gaps, with capacity chosen on inner chunks, and compare
-direct mean-gap correction with a consistent pairwise reconstruction. If this cannot beat
-temperature plus static token bias, expand the paired corpus and move to a final-hidden-
-state amplitude head; additional models that see only the same saved logits are unlikely
-to close the 57% oracle gap.
+Expand the paired corpus, export aligned Q2 final hidden states, and train a low-rank map
+to the 16 BF16 residual amplitudes identified by the oracle diagnostic. Validate first on
+held-out prose chunks and then frozen on code. Additional calibration models that see only
+the same 2,016 saved output distributions are unlikely to close the 57% oracle gap.

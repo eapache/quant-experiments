@@ -35,6 +35,11 @@ evaluation over 2,016 teacher-forced positions:
 - Cumulative-mass calibration learns a stable global Q2 top-p near 0.939 and recovers
   0.64% sampler JS in held-out prose. Frozen on code, the gain falls to 0.06% with a 95%
   interval crossing zero. Temperature remains the strongest simple portable adjustment.
+- Monotonic pairwise gap calibration edges the prose static-bias baseline by only 0.000101
+  KL (1.70% versus 1.65% recovery), with a four-block interval crossing zero and unstable
+  selected capacity. Frozen on code, its incremental gain is 0.000051 with a per-chunk
+  interval crossing zero. The prose-trained static token bias itself recovers -4.72% on
+  code, so neither vocabulary bias nor gap calibration is portable here.
 
 The artifacts are tied to the exact model files, llama.cpp revision, CUDA backend, prompt
 distribution, and reference sampler.
@@ -49,6 +54,8 @@ distribution, and reference sampler.
 - [`results/bf16_neural_low_rank_q2/NEURAL_LOW_RANK.md`](results/bf16_neural_low_rank_q2/NEURAL_LOW_RANK.md): tiny nonlinear predictor
 - [`results/bf16_mass_q2/MASS_CALIBRATION.md`](results/bf16_mass_q2/MASS_CALIBRATION.md): cumulative-mass calibration
 - [`results/bf16_mass_q2/FROZEN_MASS.md`](results/bf16_mass_q2/FROZEN_MASS.md): frozen code-corpus mass check
+- [`results/bf16_gap_q2/GAP_CALIBRATION.md`](results/bf16_gap_q2/GAP_CALIBRATION.md): monotonic rank-conditioned gap calibration
+- [`results/bf16_gap_q2/FROZEN_GAP.md`](results/bf16_gap_q2/FROZEN_GAP.md): frozen code-corpus gap check
 - [`results/bf16_ood_code/SAMPLER.md`](results/bf16_ood_code/SAMPLER.md): frozen BF16-relative code check
 - [`EXPERIMENT_LOG.md`](EXPERIMENT_LOG.md): decisions, commands, environment, and findings
 - [`results/gpu32/REPORT.md`](results/gpu32/REPORT.md): 63-1,512-position correction curves

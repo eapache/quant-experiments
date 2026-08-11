@@ -497,3 +497,45 @@ interval [-0.0002487, 0.0003055]. Temperature still recovered 0.79% with an inte
 zero. Cumulative-mass calibration therefore improves support calibration in-domain but is
 not a portable correction on this evidence. See `results/bf16_mass_q2/MASS_CALIBRATION.md`
 and `results/bf16_mass_q2/FROZEN_MASS.md`.
+
+### Monotonic rank-conditioned gap calibration (2026-08-11)
+
+`analyze_gap_calibration.py` tests the last planned sampler-only correction. Starting from
+temperature plus static token bias, it fits weighted monotonic piecewise-linear mappings
+from Q2 gaps to BF16 gaps. The direct method maps gaps from the candidate top token. The
+pairwise method maps all top-head pairs, reconstructs one consistent logit vector, and
+blends it with the baseline. Head sizes 8/16/32, 4/8/16/32 knots, 1/4 rank bins, and
+strengths 0.05/0.1/0.25/0.5/1 are nested-selected with a null option.
+
+```bash
+python3 analyze_gap_calibration.py \
+  --reference results/logits/bf16-32.kld \
+  --candidate results/logits/q2-32.kld --candidate-name Q2_K_XL \
+  --reference-label BF16 --output-dir results/bf16_gap_q2
+```
+
+Direct calibration worsened held-out KL to 0.2180525 after selection, below the 1.65%
+static-bias recovery. Selected pairwise calibration reached KL 0.2177002, or 1.70%
+recovery, an incremental reduction of only 0.0001013. Its normal 95% interval across the
+four outer blocks is [-0.0000102, 0.0002128]. Capacity is unstable: selected strengths
+range from 0.05 to 0.5 and head sizes from 8 to 32.
+
+The modal pairwise capacity (head 8, 32 knots, one rank bin) and median accepted strength
+0.1 were fitted on all prose positions and frozen before loading code:
+
+```bash
+python3 evaluate_frozen_gap.py \
+  --train-reference results/logits/bf16-32.kld \
+  --train-candidate results/logits/q2-32.kld \
+  --ood-reference results/logits/bf16-code32.kld \
+  --ood-candidate results/logits/q2-code32.kld \
+  --reference-label BF16 --output-dir results/bf16_gap_q2
+```
+
+On code, the gap layer reduces KL by 0.0000511 relative to its frozen static-bias
+baseline, with a per-chunk interval [-0.0001899, 0.0002920] and 17/32 improved chunks.
+The larger finding is that the prose-trained static token bias itself worsens raw code KL
+from 0.1792113 to 0.1876659 (-4.72% recovery). Monotonic gap calibration is therefore not
+a repeatable or portable improvement. This exhausts the planned methods that consume only
+the existing saved logits; the next experiment should expose the final hidden state and
+distill BF16 residual amplitudes from substantially more paired data.
