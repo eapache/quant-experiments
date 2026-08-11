@@ -2,5 +2,6 @@ __pycache__/
 *.pyc
 *.kld
 results/logits/
+results/models/
 extract_hidden_states
 extract_layer_states
