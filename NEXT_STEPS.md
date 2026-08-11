@@ -273,7 +273,7 @@ than Q2 in a paired run; hybrid-to-hybrid differences are within run variability
 The FFN family is therefore validated well enough to split its up, gate, and down matrices.
 See `results/bf16_tensor_families/FROZEN_HYBRID_PRECISION.md`.
 
-## Completed provisionally: individual early FFN matrices
+## Completed: individual early FFN matrices
 
 Across blocks 0 and 1, Q4 up-only recovers 2.96% of prose KL for 10.5 MiB, improves 24/32
 chunks, and has interval [0.002439, 0.010691]. Gate-only recovers 2.34% for the same bytes,
@@ -284,6 +284,9 @@ Because gate and up are both positive while down is negative, test the predeclar
 21.1 MiB gate+up combination on prose. Only then select up-only or gate+up for code; do not
 use individual matrix code captures in that choice. See
 `results/bf16_ffn_matrices/HYBRID_PRECISION.md`.
+
+That predeclared follow-up is complete below: gate+up passed prose and frozen code, while
+up-only did not establish code transfer.
 
 ## Completed: gate+up combination
 
