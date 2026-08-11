@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Tests for selective hybrid tensor routing."""
 
+import re
 import unittest
 
 from build_hybrid_gguf import tensor_layer, use_donor
@@ -18,6 +19,12 @@ class HybridGgufTest(unittest.TestCase):
         self.assertTrue(use_donor("blk.2.ffn_down.weight", layers))
         self.assertFalse(use_donor("blk.3.attn_q.weight", layers))
         self.assertFalse(use_donor("token_embd.weight", layers))
+
+    def test_donor_selection_can_filter_tensor_families(self) -> None:
+        ffn = (re.compile(r"\.ffn_"),)
+        self.assertTrue(use_donor("blk.0.ffn_up.weight", {0, 1}, ffn))
+        self.assertFalse(use_donor("blk.0.attn_qkv.weight", {0, 1}, ffn))
+        self.assertFalse(use_donor("blk.2.ffn_up.weight", {0, 1}, ffn))
 
 
 if __name__ == "__main__":

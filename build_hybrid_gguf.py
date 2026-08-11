@@ -21,9 +21,11 @@ def tensor_layer(name: str) -> int | None:
     return int(match.group(1)) if match else None
 
 
-def use_donor(name: str, layers: set[int]) -> bool:
+def use_donor(name: str, layers: set[int],
+              includes: tuple[re.Pattern[str], ...] = ()) -> bool:
     layer = tensor_layer(name)
-    return layer is not None and layer in layers
+    return (layer is not None and layer in layers
+            and (not includes or any(pattern.search(name) for pattern in includes)))
 
 
 def digest(data: np.ndarray) -> str:
@@ -37,6 +39,8 @@ def main() -> None:
     parser.add_argument("--donor", type=Path, required=True,
                         help="shape-compatible GGUF supplying replacement blocks")
     parser.add_argument("--layers", type=int, nargs="+", required=True)
+    parser.add_argument("--include", action="append", default=[], metavar="REGEX",
+                        help="replace only selected-layer tensor names matching any regex")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--gguf-python-path", type=Path,
                         default=Path("/home/eapache/src/llama.cpp/gguf-py"))
@@ -46,6 +50,10 @@ def main() -> None:
     layers = set(args.layers)
     if not layers or min(layers) < 0:
         parser.error("layers must be nonnegative")
+    try:
+        includes = tuple(re.compile(pattern) for pattern in args.include)
+    except re.error as error:
+        parser.error(f"invalid --include regex: {error}")
 
     sys.path.insert(0, str(args.gguf_python_path))
     try:
@@ -70,6 +78,11 @@ def main() -> None:
                         if (layer := tensor_layer(name)) is not None}
     if not layers <= available_layers:
         raise ValueError(f"requested absent layers: {sorted(layers - available_layers)}")
+    selected_names = {
+        name for name in base_tensors if use_donor(name, layers, includes)
+    }
+    if not selected_names:
+        raise ValueError("no tensors match the requested layers and include patterns")
 
     arch = base.get_field(gguf.Keys.General.ARCHITECTURE).contents()
     writer = gguf.GGUFWriter(args.output, arch=arch, endianess=base.endianess)
@@ -85,13 +98,15 @@ def main() -> None:
     writer.add_string("hybrid.base_model", args.base.name)
     writer.add_string("hybrid.donor_model", args.donor.name)
     writer.add_string("hybrid.replaced_layers", ",".join(map(str, sorted(layers))))
+    if args.include:
+        writer.add_string("hybrid.tensor_include", "\n".join(args.include))
 
     selected = []
     base_bytes = donor_bytes = 0
     tensors_to_write = []
     for base_tensor in base.tensors:
         donor_tensor = donor_tensors[base_tensor.name]
-        source = donor_tensor if use_donor(base_tensor.name, layers) else base_tensor
+        source = donor_tensor if base_tensor.name in selected_names else base_tensor
         tensors_to_write.append(source)
         if source is donor_tensor:
             selected.append(base_tensor.name)
@@ -106,7 +121,7 @@ def main() -> None:
     writer.write_ti_data_to_file()
     for index, tensor in enumerate(tensors_to_write):
         writer.write_tensor_data(tensor.data, tensor_endianess=(
-            donor.endianess if use_donor(tensor.name, layers) else base.endianess))
+            donor.endianess if tensor.name in selected_names else base.endianess))
         if (index + 1) % 50 == 0:
             print(f"wrote {index + 1}/{len(tensors_to_write)} tensors", flush=True)
     writer.close()
@@ -117,14 +132,15 @@ def main() -> None:
     if result_tensors.keys() != base_tensors.keys():
         raise RuntimeError("output tensor names changed during write")
     for name, result_tensor in result_tensors.items():
-        expected = donor_tensors[name] if use_donor(name, layers) else base_tensors[name]
+        expected = donor_tensors[name] if name in selected_names else base_tensors[name]
         if result_tensor.tensor_type != expected.tensor_type:
             raise RuntimeError(f"output tensor type mismatch for {name}")
         if digest(result_tensor.data) != digest(expected.data):
             raise RuntimeError(f"output tensor bytes mismatch for {name}")
     added = donor_bytes - base_bytes
+    scope = (f" matching {args.include}" if args.include else "")
     print(f"verified {len(result_tensors)} tensors; replaced {len(selected)} tensors in "
-          f"layers {sorted(layers)}; tensor payload change {added / 2**20:+.1f} MiB; "
+          f"layers {sorted(layers)}{scope}; tensor payload change {added / 2**20:+.1f} MiB; "
           f"output size {os.path.getsize(args.output) / 2**30:.3f} GiB")
 
 
