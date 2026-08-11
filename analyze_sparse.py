@@ -141,10 +141,15 @@ def metrics(rows: list[PairedRow], selected: np.ndarray, temperature: float,
         js.append(float(0.5 * np.dot(p, lp - np.log(midpoint))
                         + 0.5 * np.dot(q, lq - np.log(midpoint))))
         tv.append(float(0.5 * np.abs(p - q).sum()))
-        ref_top = np.argpartition(row.reference, -10)[-10:]
-        candidate_top = np.argpartition(corrected, -10)[-10:]
+        # KLD compression can leave fewer than ten non-clipped tokens in the union.
+        # In that case the tail ordering is unobservable, so compare the largest
+        # observable head rather than failing or inventing an ordering for clipped ties.
+        top_k = min(10, len(row.token_ids))
+        ref_top = np.argpartition(row.reference, -top_k)[-top_k:]
+        candidate_top = np.argpartition(corrected, -top_k)[-top_k:]
         top1.append(int(np.argmax(row.reference) == np.argmax(corrected)))
-        top10.append(np.intersect1d(ref_top, candidate_top, assume_unique=True).size / 10.0)
+        top10.append(
+            np.intersect1d(ref_top, candidate_top, assume_unique=True).size / top_k)
     return {
         "kl": float(np.mean(kl)),
         "js": float(np.mean(js)),
