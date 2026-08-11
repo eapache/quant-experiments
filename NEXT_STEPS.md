@@ -273,6 +273,18 @@ than Q2 in a paired run; hybrid-to-hybrid differences are within run variability
 The FFN family is therefore validated well enough to split its up, gate, and down matrices.
 See `results/bf16_tensor_families/FROZEN_HYBRID_PRECISION.md`.
 
+## Completed provisionally: individual early FFN matrices
+
+Across blocks 0 and 1, Q4 up-only recovers 2.96% of prose KL for 10.5 MiB, improves 24/32
+chunks, and has interval [0.002439, 0.010691]. Gate-only recovers 2.34% for the same bytes,
+improves 23/32 chunks, and also excludes zero. Down-only adds 17.6 MiB but worsens KL by
+0.49%; its interval crosses zero. Up is the best individual memory point.
+
+Because gate and up are both positive while down is negative, test the predeclared
+21.1 MiB gate+up combination on prose. Only then select up-only or gate+up for code; do not
+use individual matrix code captures in that choice. See
+`results/bf16_ffn_matrices/HYBRID_PRECISION.md`.
+
 ## Priority 2: larger-corpus adapter or LoRA distillation
 
 The remaining learned-model test needs substantially more paired and more varied data.
@@ -327,8 +339,8 @@ All advanced experiments should retain the safeguards established by the current
 
 ## Recommended next decisive experiment
 
-Split the validated Q4 FFN family into down, gate, and up matrix ablations, selecting on
-prose before any new code captures.
+Test the predeclared Q4 gate+up combination on prose, then freeze either it or up-only for
+code without inspecting the rejected alternatives there.
 Separately, collect many independently sourced documents before adding learned model
 capacity; more positions from the same transcript will not resolve workload-level
 uncertainty. For another learned

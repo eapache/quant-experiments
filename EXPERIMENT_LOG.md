@@ -998,3 +998,22 @@ FFN-only at 5467.6/222.54, complete Q4 blocks at 5407.9/226.47, and complete Q8 
 5534.3/220.70. FFN-only generation is 3.25% below Q2. Differences among hybrids are smaller
 than their run standard deviations, so there is no defensible family-level speed ordering.
 Raw aggregates are in `results/bf16_tensor_families/family_throughput.csv`.
+
+### Individual early-FFN matrices (2026-08-11)
+
+The validated Q4 FFN family in blocks 0 and 1 was split into its three matrix types. Each
+model uses the byte-verifying builder with one of `--include '\.ffn_up\.'`,
+`'\.ffn_gate\.'`, or `'\.ffn_down\.'`. Up and gate each replace two tensors and add
+11,059,424 bytes (10.5 MiB); down replaces two and adds 18,432,224 bytes (17.6 MiB).
+Exact hashes are in `results/bf16_ffn_matrices/matrix_models.csv`.
+
+On prose, up-only reduces KL from 0.2214713 to 0.2149065, recovering 2.96%. It improves
+24/32 chunks with interval [0.0024387, 0.0106909] and delivers 0.00062243 KL reduction per
+added MiB. Gate-only reaches KL 0.2162851 (2.34%), improves 23/32 chunks, and has interval
+[0.0017792, 0.0085932]. Down-only moves KL the wrong way to 0.2225600 (-0.49%), improves
+13/32 chunks, and has interval [-0.0031630, 0.0009855].
+
+The up and gate reductions sum to 0.0117510, slightly above the complete FFN model's
+0.0109653 reduction, while down is harmful alone. A 21.1 MiB gate+up model is therefore
+predeclared as the next prose test. No individual matrix code captures are loaded before
+choosing between that combination and the 10.5 MiB up-only point.
