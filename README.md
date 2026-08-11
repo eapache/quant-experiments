@@ -40,7 +40,9 @@ evaluation over 2,016 teacher-forced positions:
 - Replacing the tied Q6_K output head with BF16 weights only for the candidate's top tokens
   recovers 0.57% of Q2 KL in nested held-out evaluation. All four folds improve, but the
   correction has only 0.037 correlation with the full residual and a complete BF16 sidecar
-  would cost about 1.18 GiB. Most degradation is upstream of the already-high-bit head.
+  would cost about 1.18 GiB. Frozen on code at natural strength, recovery falls to 0.15%
+  with a chunk interval crossing zero. Most degradation is upstream of the already-high-bit
+  head.
 - Cumulative-mass calibration learns a stable global Q2 top-p near 0.939 and recovers
   0.64% sampler JS in held-out prose. Frozen on code, the gain falls to 0.06% with a 95%
   interval crossing zero. Temperature remains the strongest simple portable adjustment.
@@ -65,6 +67,7 @@ distribution, and reference sampler.
 - [`results/bf16_neural_low_rank_q2/NEURAL_LOW_RANK.md`](results/bf16_neural_low_rank_q2/NEURAL_LOW_RANK.md): tiny nonlinear predictor
 - [`results/bf16_hidden_q2/HIDDEN_ADAPTER.md`](results/bf16_hidden_q2/HIDDEN_ADAPTER.md): final-hidden-state ridge map
 - [`results/bf16_output_head_q2/OUTPUT_HEAD.md`](results/bf16_output_head_q2/OUTPUT_HEAD.md): sparse BF16 output-head sidecar
+- [`results/bf16_output_head_q2/FROZEN_OUTPUT_HEAD.md`](results/bf16_output_head_q2/FROZEN_OUTPUT_HEAD.md): frozen code-corpus head check
 - [`results/bf16_mass_q2/MASS_CALIBRATION.md`](results/bf16_mass_q2/MASS_CALIBRATION.md): cumulative-mass calibration
 - [`results/bf16_mass_q2/FROZEN_MASS.md`](results/bf16_mass_q2/FROZEN_MASS.md): frozen code-corpus mass check
 - [`results/bf16_gap_q2/GAP_CALIBRATION.md`](results/bf16_gap_q2/GAP_CALIBRATION.md): monotonic rank-conditioned gap calibration

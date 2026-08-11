@@ -701,3 +701,29 @@ Q2 error before the output head. A full BF16 head sidecar would add about 1.18 G
 deployment strategy. The output-head upgrade is measurable but too small and costly to
 recommend over sampler temperature compensation. Full results are in
 `results/bf16_output_head_q2/OUTPUT_HEAD.md`.
+
+The natural, calibration-free strength 1 and prose-tested head size 256 were frozen before
+loading the existing code capture. An aligned code hidden-state artifact was generated with:
+
+```bash
+./extract_hidden_states \
+  --model /home/eapache/src/llama.cpp/models/custom/Qwen3.5-4B/Qwen3.5-4B-UD-Q2_K_XL.gguf \
+  --tokens results/logits/q2-code32.kld \
+  --output results/logits/q2-code-hidden-32.bin \
+  --gpu-layers 999 --device CUDA0 --threads 12
+
+PYTHONPATH=/home/eapache/src/llama.cpp/gguf-py python3 evaluate_frozen_output_head.py \
+  --reference results/logits/bf16-code32.kld \
+  --candidate results/logits/q2-code32.kld \
+  --hidden results/logits/q2-code-hidden-32.bin \
+  --reference-model /home/eapache/src/llama.cpp/models/custom/Qwen3.5-4B/Qwen3.5-4B-BF16.gguf \
+  --candidate-model /home/eapache/src/llama.cpp/models/custom/Qwen3.5-4B/Qwen3.5-4B-UD-Q2_K_XL.gguf \
+  --head 256 --strength 1 --output-dir results/bf16_output_head_q2
+```
+
+Code KL falls from 0.1792153 to 0.1789424, only 0.15% recovery. The correction improves
+20/32 chunks; mean per-chunk reduction is 0.0002729 with a descriptive t interval
+[-0.0001954, 0.0007413]. Top-1 rises by 0.1 point and top-10 is unchanged. The head-target
+correlation also falls from 0.037 on prose to 0.028 on code. This independent workload does
+not establish a portable benefit. See
+`results/bf16_output_head_q2/FROZEN_OUTPUT_HEAD.md`.

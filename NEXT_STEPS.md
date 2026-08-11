@@ -173,6 +173,13 @@ and a complete BF16 sidecar would add about 1.18 GiB, so this is not competitive
 smaller, similarly effective temperature adjustment. See
 `results/bf16_output_head_q2/OUTPUT_HEAD.md`.
 
+The natural-strength head-256 correction was then frozen before loading the code capture.
+It recovers only 0.15% of code KL, improves 20/32 chunks, and has mean per-chunk reduction
+0.0002729 with a descriptive interval [-0.0001954, 0.0007413]. Its correction/residual
+correlation falls to 0.028. This is consistent with a tiny real head-quantization effect,
+but it is neither large nor stable enough to justify a BF16 sidecar. See
+`results/bf16_output_head_q2/FROZEN_OUTPUT_HEAD.md`.
+
 ## Priority 2: larger-corpus adapter or LoRA distillation
 
 The remaining learned-model test needs substantially more paired and more varied data.
