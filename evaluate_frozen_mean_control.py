@@ -73,8 +73,8 @@ def main() -> None:
             f"{result['top1_agreement']:.1%} | {result['top10_overlap']:.1%} |")
     lines += [
         "",
-        f"The correction improves {int((reductions > 0).sum())}/{len(reductions)} chunks. Mean",
-        f"per-chunk KL reduction is {reduction:.7f}; the descriptive chunk-level t interval is",
+        f"The correction improves {int((reductions > 0).sum())}/{len(reductions)} chunks.",
+        f"Mean per-chunk KL reduction is {reduction:.7f}; the descriptive chunk-level t interval is",
         f"[{reduction - half_width:.7f}, {reduction + half_width:.7f}].",
         "",
         "Per-chunk metrics are in `frozen_mean_control_chunks.csv`.",

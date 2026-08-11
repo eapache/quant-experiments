@@ -215,6 +215,11 @@ based correction would need a KL-aware direction or context-dependent coefficien
 larger static control vector is not justified. See
 `results/bf16_mean_control_q2/MEAN_CONTROL.md`.
 
+The all-prose vector was frozen on the independent code capture. It reduces KL from
+0.1792153 to 0.1788410 (0.21%), improves 19/32 chunks, and has mean chunk reduction
+0.0003743 with descriptive interval [-0.0017000, 0.0024486]. This does not establish a
+portable gain. See `results/bf16_mean_control_q2/FROZEN_MEAN_CONTROL.md`.
+
 ## Priority 2: larger-corpus adapter or LoRA distillation
 
 The remaining learned-model test needs substantially more paired and more varied data.

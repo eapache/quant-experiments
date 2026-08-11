@@ -807,3 +807,28 @@ four-block interval [-0.0013435, 0.0014478]. TV improves from 0.2140513 to 0.213
 top-10 overlap rises from 75.7% to 76.0%, but top-1 changes only 0.3 point. A stable mean
 hidden error is therefore not aligned with the BF16 KL objective. Full results and the
 deployable sidecars are in `results/bf16_mean_control_q2/`.
+
+The exact source of the existing code captures, recovered and verified from their token
+headers, is `chats/quant-sampler-compensation-lab/quant_sampler_lab.py`. The all-prose
+vector was frozen and evaluated without code-side tuning:
+
+```bash
+/home/eapache/src/llama.cpp/build/bin/llama-perplexity \
+  -m /home/eapache/src/llama.cpp/models/custom/Qwen3.5-4B/Qwen3.5-4B-UD-Q2_K_XL.gguf \
+  -f chats/quant-sampler-compensation-lab/quant_sampler_lab.py \
+  -c 128 -b 128 -ub 128 --chunks 32 -t 12 --no-warmup \
+  -dev CUDA0 -sm none -ngl all \
+  --control-vector results/bf16_mean_control_q2/mean_control_layer2_all.gguf \
+  --kl-divergence-base results/logits/q2-code-mean-control.kld
+
+python3 evaluate_frozen_mean_control.py \
+  --reference results/logits/bf16-code32.kld \
+  --baseline results/logits/q2-code32.kld \
+  --candidate results/logits/q2-code-mean-control.kld \
+  --state-layer 3 --control-layer 2 --output-dir results/bf16_mean_control_q2
+```
+
+Code KL falls from 0.1792153 to 0.1788410, or 0.21% recovery. Only 19/32 chunks improve;
+mean per-chunk reduction is 0.0003743 with descriptive interval
+[-0.0017000, 0.0024486]. The tiny state-side correction is not reliably portable. See
+`results/bf16_mean_control_q2/FROZEN_MEAN_CONTROL.md`.
