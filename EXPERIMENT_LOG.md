@@ -1164,3 +1164,15 @@ recovering 2.33%. Hybrid-specific folds select 0.7550, 0.7675, 0.7500, and 0.750
 the Q2 temperature on only 15/32 chunks; mean incremental reduction is -0.0000175 with
 interval [-0.0001402, 0.0001051]. The hybrid-specific setting is rejected. T=0.7625 stacks
 with the model at zero memory cost and remains frozen for code/document evaluation.
+
+`evaluate_hybrid_sampler_documents.py` then applied the unchanged T=0.7625 setting to all
+nine out-of-selection documents: the original code lab, four repository confirmations,
+and four external mixed-format confirmations. Every document improves, with incremental
+sampler-JS recovery ranging from 0.45% to 1.90%; all nine per-file chunk intervals exclude
+zero. Pooled hybrid JS falls from 0.0689017 to 0.0681687 over 18,144 positions (1.06%).
+Mean whole-document JS reduction is 0.0007330 with interval [0.0006004, 0.0008655].
+
+The same evaluation decomposes raw Q2 JS 0.0708537 to hybrid JS 0.0689017 (2.75% recovery),
+then to hybrid+temperature JS 0.0681687 (3.79% total recovery). The final compact
+recommendation is therefore the 21.1 MiB blocks-0-1 Q4 gate+up model with the pre-existing
+T=0.7625/top-p=0.95 sampler setting for a BF16 T=0.8/top-p=0.95 target.

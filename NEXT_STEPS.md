@@ -402,14 +402,7 @@ extension improves 18/32 chunks; mean incremental reduction is 0.0007433 with in
 code or multi-document confirmation. Blocks 0-1 remain the compact recommendation. See
 `results/bf16_gate_up_block2/INCREMENTAL_PRECISION.md`.
 
-## Recommended next decisive experiment
-
-Keep the 21.1 MiB blocks-0-1 model fixed and test a zero-memory addition: refit only the
-global sampler temperature against BF16 for hybrid logits. Compare hybrid identity,
-the original Q2-frozen temperature, and hybrid-specific nested calibration; freeze any
-hybrid-specific setting before evaluating code and confirmation documents.
-
-## Completed provisionally: temperature stacked on hybrid
+## Completed: temperature stacked on hybrid
 
 At BF16 target T=0.8/top-p=0.95, applying Q2's previously frozen T=0.7625 to hybrid logits
 recovers 2.33% of sampler JS on held-out prose. Nested hybrid-only fitting selects
@@ -417,6 +410,18 @@ temperatures 0.7550, 0.7675, 0.7500, and 0.7500 (mean 0.7556), but aggregate rec
 slightly lower at 2.30%. It beats Q2's setting on only 15/32 chunks; incremental interval
 [-0.0001402, 0.0001051] crosses zero.
 
-No hybrid-specific parameter is promoted. Freeze the already-established T=0.7625 and
-evaluate whether its zero-memory incremental gain transfers across code and confirmation
-documents. See `results/bf16_hybrid_sampler/HYBRID_SAMPLER.md`.
+No hybrid-specific parameter is promoted. The already-established T=0.7625 was frozen
+across the original code file and all eight confirmation documents. It improves 9/9 whole
+documents, and every within-file chunk interval is above zero. Across 18,144 positions,
+hybrid sampler JS falls from 0.0689017 to 0.0681687 (1.06% incremental recovery); mean
+document reduction is 0.0007330 with interval [0.0006004, 0.0008655]. Relative to raw Q2,
+the model alone recovers 2.75% pooled sampler JS and model plus temperature recovers 3.79%.
+See `results/bf16_hybrid_sampler/FROZEN_HYBRID_SAMPLER.md`.
+
+## Recommended deployment point
+
+Use Q2 with Q4 `ffn_gate` and `ffn_up` tensors from blocks 0 and 1, plus sampler
+T=0.7625/top-p=0.95 when matching a BF16 T=0.8/top-p=0.95 target. The hybrid adds 21.1 MiB
+(1.14%), has no established throughput penalty at current resolution, and is the smallest
+tested model-side configuration with clear KL gains across selection and confirmation
+workloads. Further learned corrections should wait for broader paired training data.

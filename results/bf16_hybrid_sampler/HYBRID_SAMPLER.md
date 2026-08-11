@@ -23,5 +23,9 @@ The existing Q2 temperature therefore stacks cleanly with the hybrid and remains
 recommendation. It adds no model bytes or inference operation beyond changing the sampler
 parameter. The hybrid-specific mean is not promoted.
 
+Frozen results across nine out-of-selection documents are in
+`FROZEN_HYBRID_SAMPLER.md`: temperature improves all 9/9 documents and adds 1.06% pooled
+sampler-JS recovery. Model plus temperature recovers 3.79% from raw Q2 in total.
+
 Fold results are in `hybrid_sampler.csv`; paired chunk results are in
 `hybrid_sampler_chunks.csv`.
