@@ -82,8 +82,8 @@ def write_report(path: Path, rows: list[dict], state_layer: int,
             f"{value['top1_agreement']:.1%} | {value['top10_overlap']:.1%} |")
     lines += [
         "",
-        f"The control vector improves {int((reductions > 0).sum())}/{len(reductions)} outer",
-        f"folds. Mean KL reduction is {reduction:.7f}; its four-block t interval is",
+        f"The control vector improves {int((reductions > 0).sum())}/{len(reductions)} outer folds.",
+        f"Mean KL reduction is {reduction:.7f}; its four-block t interval is",
         f"[{reduction - half_width:.7f}, {reduction + half_width:.7f}].",
         "",
         "Fold metrics are in `mean_control_folds.csv`; vector metadata is in",

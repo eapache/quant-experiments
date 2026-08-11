@@ -769,3 +769,41 @@ then rises to correlation 0.27 by layers 30-31. The next cheap intervention is t
 outer-fold-clean prose vectors and then frozen on code. If it does not improve logits,
 selectively higher precision for the first recurrent blocks is the better model-side test.
 See `results/bf16_layer_drift_q2/LAYER_DRIFT.md`.
+
+### Mean residual-stream control vector (2026-08-11)
+
+The largest transferable mean-state component occurs at layer 3, immediately before the
+first full-attention block. `build_mean_control_vectors.py` fits the mean BF16-minus-Q2
+layer-3 input difference on the 24 outer-training chunks. It stores the 2,560 float32
+values as `direction.2`, which llama.cpp adds after block 2. Each GGUF is 10,464 bytes;
+strength is fixed at the natural value 1, and no BF16 output logits tune the vector.
+
+```bash
+PYTHONPATH=/home/eapache/src/llama.cpp/gguf-py python3 build_mean_control_vectors.py \
+  --reference-states results/logits/bf16-layers-32.bin \
+  --candidate-states results/logits/q2-layers-32.bin \
+  --state-layer 3 --control-layer 2 --output-dir results/bf16_mean_control_q2
+
+# Repeat for fold0 through fold3.
+/home/eapache/src/llama.cpp/build/bin/llama-perplexity \
+  -m /home/eapache/src/llama.cpp/models/custom/Qwen3.5-4B/Qwen3.5-4B-UD-Q2_K_XL.gguf \
+  -f chats/first.txt -c 128 -b 128 -ub 128 --chunks 32 -t 12 --no-warmup \
+  -dev CUDA0 -sm none -ngl all \
+  --control-vector results/bf16_mean_control_q2/mean_control_layer2_fold0.gguf \
+  --kl-divergence-base results/logits/q2-mean-control-fold0.kld
+
+python3 evaluate_mean_control.py \
+  --reference results/logits/bf16-32.kld --baseline results/logits/q2-32.kld \
+  --candidates results/logits/q2-mean-control-fold0.kld \
+               results/logits/q2-mean-control-fold1.kld \
+               results/logits/q2-mean-control-fold2.kld \
+               results/logits/q2-mean-control-fold3.kld \
+  --state-layer 3 --control-layer 2 --output-dir results/bf16_mean_control_q2
+```
+
+The correction recovers 9.15% of held-out state MSE at layer 3 but only 0.02% of final KL:
+0.2214713 falls to 0.2214191. It improves 2/4 folds, and mean reduction 0.0000522 has a
+four-block interval [-0.0013435, 0.0014478]. TV improves from 0.2140513 to 0.2134115 and
+top-10 overlap rises from 75.7% to 76.0%, but top-1 changes only 0.3 point. A stable mean
+hidden error is therefore not aligned with the BF16 KL objective. Full results and the
+deployable sidecars are in `results/bf16_mean_control_q2/`.

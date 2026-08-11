@@ -200,6 +200,21 @@ it on code. If that fails, selectively retaining the first recurrent blocks at h
 precision is more motivated than upgrading the output head. See
 `results/bf16_layer_drift_q2/LAYER_DRIFT.md`.
 
+## Completed: mean residual-stream control vector
+
+`build_mean_control_vectors.py` produces outer-fold-clean 10,464-byte GGUF sidecars from
+the mean BF16-minus-Q2 state difference at layer 3. llama.cpp adds each 2,560-float vector
+after block 2 at natural strength 1. This uses no BF16 output logits, and fold vectors have
+stable RMS near 0.00412.
+
+Despite recovering 9.15% of held-out state MSE at the target layer, the vector reduces
+final KL only from 0.2214713 to 0.2214191 (0.02%). It improves 2/4 outer folds; mean KL
+reduction is 0.0000522 with interval [-0.0013435, 0.0014478]. TV and top-10 overlap improve
+slightly, but average hidden-state MSE is not a useful proxy for BF16 KL. The next state-
+based correction would need a KL-aware direction or context-dependent coefficients; a
+larger static control vector is not justified. See
+`results/bf16_mean_control_q2/MEAN_CONTROL.md`.
+
 ## Priority 2: larger-corpus adapter or LoRA distillation
 
 The remaining learned-model test needs substantially more paired and more varied data.
