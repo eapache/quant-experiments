@@ -1,0 +1,5 @@
+label,format,path,bytes,lines,sha256,chunks,context
+stdlib-argparse,Python,/usr/lib/python3.12/argparse.py,101750,2677,29395feb61bc376ca4ff9d44069af8d914ec2a1f25a4bd7978f6e2afef5bc07f,32,128
+llama-sampling,C++,/home/eapache/src/llama.cpp/common/sampling.cpp,34772,919,f23f8d663932bfd73abac1bd5e99055fc6efb07e21ef27dd7e25af2f2da40bff,32,128
+server-docs,Markdown,/home/eapache/src/llama.cpp/tools/server/README.md,100824,2069,1591a7745de600b6043afd40062524455784e43ac2a10fb7e88f414e64d402ea,32,128
+gpl3,legal prose,/usr/share/common-licenses/GPL-3,35149,674,3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986,32,128

@@ -385,5 +385,7 @@ documents remain Python implementations from one repository. See
 Retain the two-block Q4 gate+up model as the compact recommendation. Freeze a second
 confirmation set outside this repository and include different source formats before more
 tensor selection. This will test whether the gain extends beyond one Python authoring
-style. Separately, collect substantially more paired data before adding learned model
-capacity; more positions from the same sources will not resolve workload-level uncertainty.
+style. That external Python/C++/Markdown/legal-prose set is now predeclared in
+`results/bf16_external_confirmation/CORPUS.md`. Separately, collect substantially more
+paired data before adding learned model capacity; more positions from the same sources will
+not resolve workload-level uncertainty.

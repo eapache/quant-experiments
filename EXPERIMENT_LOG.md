@@ -1119,3 +1119,11 @@ recovery is 3.38%. Mean document KL reduction is 0.0070940 with a four-document 
 whole-document interval does not. The model is now supported across six code/prose files,
 with the remaining caveat that the four new files share repository, authoring style, and
 Python language.
+
+### Frozen external mixed-format confirmation set (2026-08-11)
+
+A second set was fixed before capture to change repository, authorship, and format:
+Python 3.12's `argparse.py`, llama.cpp's `common/sampling.cpp`, llama.cpp server Markdown,
+and the system GPLv3 legal text. Exact paths, sizes, line counts, and SHA-256 values are in
+`results/bf16_external_confirmation/confirmation_corpora.csv`. Each will use 32 chunks at
+context 128, and every predeclared result will be retained.

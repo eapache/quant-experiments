@@ -118,6 +118,7 @@ distribution, and reference sampler.
 - [`results/bf16_gate_up_layers/FROZEN_HYBRID_PRECISION.md`](results/bf16_gate_up_layers/FROZEN_HYBRID_PRECISION.md): frozen single-block rejection
 - [`results/bf16_document_confirmation/CORPUS.md`](results/bf16_document_confirmation/CORPUS.md): predeclared four-document confirmation set
 - [`results/bf16_document_confirmation/DOCUMENT_CONFIRMATION.md`](results/bf16_document_confirmation/DOCUMENT_CONFIRMATION.md): frozen multi-document result
+- [`results/bf16_external_confirmation/CORPUS.md`](results/bf16_external_confirmation/CORPUS.md): predeclared external mixed-format set
 - [`results/bf16_mass_q2/MASS_CALIBRATION.md`](results/bf16_mass_q2/MASS_CALIBRATION.md): cumulative-mass calibration
 - [`results/bf16_mass_q2/FROZEN_MASS.md`](results/bf16_mass_q2/FROZEN_MASS.md): frozen code-corpus mass check
 - [`results/bf16_gap_q2/GAP_CALIBRATION.md`](results/bf16_gap_q2/GAP_CALIBRATION.md): monotonic rank-conditioned gap calibration
