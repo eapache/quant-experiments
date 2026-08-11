@@ -6,6 +6,14 @@ the number of directions and ridge penalty are selected on an inner chunk split.
 The predicted method receives quant-only distribution features. The oracle uses the
 held-out reference to choose amplitudes and is an unattainable diagnostic upper bound.
 
+**Later control result:** matched Gaussian rank-16 directions recover 55.30% of raw KL,
+close to learned PCA's 57.09%. The large oracle number is therefore mostly generic per-row
+oracle capacity, not proof of a 16-dimensional residual. See
+[`../bf16_low_rank_structure_q2/LOW_RANK_STRUCTURE.md`](../bf16_low_rank_structure_q2/LOW_RANK_STRUCTURE.md).
+When the prose-trained bases are frozen on code, Gaussian directions outperform learned
+PCA at every rank; see
+[`../bf16_low_rank_structure_q2/FROZEN_LOW_RANK_STRUCTURE.md`](../bf16_low_rank_structure_q2/FROZEN_LOW_RANK_STRUCTURE.md).
+
 | Method | KL | Recovered | JS | TV | Top-1 | Top-10 |
 |---|---:|---:|---:|---:|---:|---:|
 | identity | 0.2214648 | 0.00% | 0.0510451 | 0.2140513 | 77.3% | 75.7% |

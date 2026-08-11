@@ -21,11 +21,13 @@ evaluation over 2,016 teacher-forced positions:
   small and statistically inconclusive.
 - At T=1, a shrunken static token bias recovers 2.88% of Q4 KL and 1.65% of Q2 KL toward
   BF16. It slightly worsens the already-small Q8 residual.
-- A top-128 low-rank Q2 residual model reveals a large diagnostic gap: oracle amplitudes
-  for 16 learned directions recover 57.09% of KL, but a quant-only ridge predictor is
-  rejected in three of four folds and recovers only 1.44%, worse than static token bias.
-  The missing ingredient is predicting context-specific correction amplitudes, not finding
-  residual structure.
+- The apparent top-128 low-rank oracle gap is mostly an oracle-capacity effect. Sixteen
+  learned residual directions recover 57.09% of KL, but matched Gaussian random directions
+  already recover 55.30%. Learned PCA contributes only 0.00395 additional KL reduction
+  (3.1% of the total oracle reduction), with a four-block interval crossing zero. Singular
+  values suggest some prose-specific covariance, but it is not portable: frozen on code,
+  learned PCA loses to Gaussian directions at every rank and wins only 1/32 chunks at rank
+  16. The data do not establish an intrinsically low-dimensional residual.
 - A conditional empirical posterior over similar quant-logit heads is rejected in all
   four folds. Forced posterior prediction is safer than a conditional mean, but still
   recovers -0.53% of KL; the forced mean recovers -8.47%.
@@ -53,6 +55,8 @@ distribution, and reference sampler.
 - [`results/bf16_gpu32/REPORT.md`](results/bf16_gpu32/REPORT.md): BF16-relative correction curves
 - [`results/bf16_gpu32/SAMPLER.md`](results/bf16_gpu32/SAMPLER.md): BF16-relative sampler search
 - [`results/bf16_low_rank_q2/LOW_RANK.md`](results/bf16_low_rank_q2/LOW_RANK.md): nested low-rank diagnostic
+- [`results/bf16_low_rank_structure_q2/LOW_RANK_STRUCTURE.md`](results/bf16_low_rank_structure_q2/LOW_RANK_STRUCTURE.md): matched-null low-rank validation
+- [`results/bf16_low_rank_structure_q2/FROZEN_LOW_RANK_STRUCTURE.md`](results/bf16_low_rank_structure_q2/FROZEN_LOW_RANK_STRUCTURE.md): frozen prose-to-code structure check
 - [`results/bf16_posterior_q2/POSTERIOR.md`](results/bf16_posterior_q2/POSTERIOR.md): empirical posterior sampler
 - [`results/bf16_neural_low_rank_q2/NEURAL_LOW_RANK.md`](results/bf16_neural_low_rank_q2/NEURAL_LOW_RANK.md): tiny nonlinear predictor
 - [`results/bf16_hidden_q2/HIDDEN_ADAPTER.md`](results/bf16_hidden_q2/HIDDEN_ADAPTER.md): final-hidden-state ridge map

@@ -17,8 +17,9 @@ quantization-compensation hierarchy and several higher-capacity residual models:
 - a 2,560-feature final-hidden-state ridge map to residual amplitudes.
 
 Deployable methods recovered only a few percent of divergence toward BF16. The low-rank
-oracle recovered much more, but ridge, nearest-neighbor posterior, and tiny nonlinear
-quant-only predictors did not. The following ideas remain untested on real GGUF logits.
+oracle recovered much more, although matched random directions explain nearly all of that
+oracle recovery. Ridge, nearest-neighbor posterior, and tiny nonlinear quant-only predictors
+did not improve. The following ideas remain untested on real GGUF logits.
 
 ## Completed: predictive low-rank logit denoiser
 
@@ -51,9 +52,39 @@ The key diagnostic gap is:
 
 The 16-direction oracle recovers 57.09% of Q2 KL and raises top-1 agreement from 77.3% to
 94.4%. The nested quant-only predictor recovers only 1.44%, below the 1.65% static-bias
-baseline; inner validation selects zero directions in three of four folds. Useful residual
-structure exists, but its amplitudes are not inferable from the tested entropy, margin,
-mass, and basis-projection features. See `results/bf16_low_rank_q2/LOW_RANK.md`.
+baseline; inner validation selects zero directions in three of four folds. A later matched-
+null diagnostic substantially changes the oracle interpretation, as described below. See
+`results/bf16_low_rank_q2/LOW_RANK.md`.
+
+## Completed: matched-null low-rank validation
+
+`analyze_low_rank_structure.py` gives learned and control subspaces the same held-out BF16
+oracle and the same number of per-row amplitudes. Controls include Gaussian random
+subspaces, token-permuted learned directions, and PCA after independently randomizing all
+training residual signs. All bases remain outer-fold clean.
+
+At rank 16, learned residual PCA recovers 57.09% of raw KL, but Gaussian random directions
+already recover 55.30%, sign-randomized PCA recovers 51.82%, and token-permuted PCA recovers
+34.65%. The learned advantage over the mean Gaussian oracle is only 0.00395 KL, or 3.1% of
+the learned oracle's total reduction. Its four-block t interval is
+[-0.00043, 0.00834]. Learned singular values exceed the sign-null values, especially in the
+first components, but learned and Gaussian rank curves track closely through rank 32 and
+neither has a sharp low-dimensional cutoff.
+
+The corrected conclusion is that coherent token-aligned covariance probably exists, but
+the 57% oracle recovery is mostly the generic power of fitting 16 target-aware coefficients
+to distributions whose median effective support is only about 10 tokens for BF16. It does
+not prove a 16-dimensional residual or establish amplitude prediction as the sole missing
+ingredient. See `results/bf16_low_rank_structure_q2/LOW_RANK_STRUCTURE.md`.
+
+The prose-trained bases were then frozen and given oracle amplitudes on the existing code
+capture. Gaussian directions beat learned PCA at every tested rank. At rank 16, learned
+PCA reaches KL 0.07714 (56.96% recovery), while Gaussian directions reach 0.06668 (62.79%).
+Learned PCA wins only 1/32 chunks; its mean advantage is -0.01046 with a descriptive
+chunk-level t interval [-0.01377, -0.00714]. Although this reused single-file corpus is not
+a pristine confirmation set, the large reversal is evidence against portable low-rank
+residual structure. See
+`results/bf16_low_rank_structure_q2/FROZEN_LOW_RANK_STRUCTURE.md`.
 
 ## Completed: cumulative-mass calibration
 
@@ -86,10 +117,11 @@ the 16 oracle amplitudes. Nested selection covers 1,624-6,448 parameters, weight
 and training duration.
 
 All four folds reject the network. Forced use recovers -6.75% KL and worsens top-10
-overlap, while the 16-direction oracle still recovers 57.09%. This strengthens the case
-that the needed context is absent from, or not learnable from, the saved output
-distribution at this sample size. A full transformer over the same logits is not the next
-efficient step without a substantially larger paired corpus.
+overlap, while the 16-direction oracle still recovers 57.09%. The matched-null result shows
+that this oracle contrast is mostly generic target-aware capacity, and coefficient MSE is
+only a surrogate for KL. The result rejects this network and training target, not every
+possible function of the saved output distribution. A full transformer remains an
+inefficient next step without a substantially larger paired corpus.
 
 ## Completed: nonlinear and pairwise gap calibration
 
@@ -119,8 +151,9 @@ Direction count and ridge strength are nested-selected with a null option.
 All four folds reject the hidden map. Forced use chooses very strong regularization and
 worsens KL from the static-bias baseline's 0.2178012 to 0.2313056, or -4.44% recovery
 from raw. The 16-direction oracle still recovers 57.01%. The normalized final state does
-not unlock the residual amplitudes at this sample size; because it feeds a linear output
-head, it is also closely related to information already present in the full logits. See
+not predict these oracle residual amplitudes at this sample size; because it feeds a linear
+output head, it is also closely related to information already present in the full logits.
+This does not replace a direct-KL training test. See
 `results/bf16_hidden_q2/HIDDEN_ADAPTER.md`.
 
 ## Priority 2: larger-corpus adapter or LoRA distillation
@@ -133,7 +166,8 @@ Start with the least invasive version:
 
 1. Expand paired prose and code calibration well beyond 2,016 positions.
 2. Capture aligned Q2 final hidden states and BF16/Q2 logits.
-3. Train a low-rank map from the Q2 hidden state directly to the 16 residual amplitudes.
+3. Train a regularized map end-to-end against BF16 KL, optionally constraining its output
+   to learned directions, rather than regressing squared error to oracle amplitudes.
 4. Only if that transfers, move the map into a last-layer LoRA or adapter and benchmark
    Q2+adapter memory, tokens/s, and KL against Q3/Q4.
 
@@ -171,12 +205,16 @@ All advanced experiments should retain the safeguards established by the current
   sampler-transformed JS/support overlap.
 - Compare every complex model to temperature, global top-p, and static token-bias
   baselines. Complexity is justified only by repeatable held-out improvement.
+- Compare every target-aware oracle to equal-rank random and covariance-destroying controls;
+  report the learned-specific gain separately from generic oracle capacity.
 
 ## Recommended next decisive experiment
 
-Expand the paired prose corpus well beyond 2,016 positions before adding model capacity.
-Reuse the working aligned hidden-state extractor, validate on held-out prose chunks, and
-only then freeze the transform for code. If a larger final-state map is still rejected,
-test an earlier-layer state or a true in-model adapter rather than another output-only
-calibrator. The existing 2,016-position output distributions and final states do not
-support a deployable correction beyond the simple baselines.
+Collect many independently sourced documents before adding model capacity; more positions
+from the same transcript will not resolve workload-level uncertainty. For another learned
+test, optimize held-out BF16 KL directly rather than squared error to non-identifiable
+per-row oracle coefficients, and retain equal-rank random controls. Reuse the hidden-state
+extractor only after this data expansion. If a direct-KL final-state map is still rejected,
+localize BF16/Q2 differences across earlier layers before attempting a last-block adapter
+or LoRA. The existing output distributions and final states do not support a deployable
+correction beyond the simple baselines.

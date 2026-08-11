@@ -396,12 +396,11 @@ python3 analyze_low_rank.py \
 | 16-direction oracle | 0.0950399 | 57.09% | 94.4% |
 
 Inner validation chose zero directions in folds 0, 1, and 3, and one direction with
-alpha 1000 in fold 2. The large oracle gap proves that the Q2 error has useful low-rank
-head structure, overturning the earlier tentative description of the residual as simply
-irreducible noise. The tested quant-only features cannot predict its context-specific
-amplitudes, so the low-rank model is not deployable and does not beat static token bias.
-The next experiment should focus on amplitude inference or an uncertainty-aware head
-sampler, not on adding more residual directions.
+alpha 1000 in fold 2. At this stage the large oracle gap was interpreted as proving useful
+low-rank head structure and motivating amplitude inference. The later matched-null analysis
+below overturns most of that interpretation: random directions recover nearly as much,
+so this experiment establishes only that the predictor is not deployable and does not beat
+static token bias.
 
 ### Conditional empirical posterior (2026-08-11)
 
@@ -446,8 +445,9 @@ All four folds selected the null static-bias baseline. Every fold preferred the 
 tested weight decay; widths and training durations were unstable. Forced use worsened KL
 to 0.2364235 (-6.75% recovery) and top-10 overlap to 74.7%, while the identically fitted
 16-direction oracle remained at 0.0950399 (57.09% recovery). This is not a full transformer
-test, but it is evidence against spending more capacity on the same saved-logit inputs at
-the current sample size. Results are in
+test, and its squared-error oracle-amplitude target is not equivalent to direct KL training,
+but it is evidence against spending more capacity on that exact pipeline at the current
+sample size. Results are in
 `results/bf16_neural_low_rank_q2/NEURAL_LOW_RANK.md`.
 
 The local `llama-finetune` tool was inspected as a possible LoRA route. This revision's
@@ -573,10 +573,96 @@ option. All four folds select null. The best forced non-null settings use alpha 
 and worsen KL in every fold: aggregate KL is 0.2313056 versus 0.2178012 for temperature
 plus static token bias, or -4.44% recovery from raw. Top-10 overlap falls from 75.9% to
 75.1%. The corresponding 16-direction oracle remains strong at KL 0.0952049 (57.01%
-recovery), confirming that amplitude prediction remains the bottleneck.
+recovery). The later matched-null result shows that this does not by itself confirm
+amplitude prediction as the unique bottleneck.
 
 This is a first pass, not the originally proposed large-data adapter experiment: it still
 uses only 2,016 paired prose positions. It is strong evidence against increasing model
 capacity on this same calibration set. A follow-up should first expand paired prose well
 beyond 2,016 positions, then reuse the extractor; if the final-state map remains rejected,
 an earlier-layer state or true last-block/LoRA distillation is the more distinct test.
+
+### Matched-null validation of the low-rank oracle (2026-08-11)
+
+The original conclusion that 57.09% rank-16 oracle recovery proved useful low-rank
+residual structure lacked an equal-capacity null. `analyze_low_rank_structure.py` now
+compares the learned basis with three outer-fold-clean controls, always allowing BF16 to
+optimize the same number of held-out per-row amplitudes:
+
+- Gaussian random subspaces on the same training-token vocabulary;
+- learned PCA directions with their vocabulary columns permuted, preserving their spectrum;
+- PCA after independently randomizing every training residual sign, preserving token-wise
+  magnitudes and sparsity while destroying signed covariance.
+
+```bash
+python3 analyze_low_rank_structure.py \
+  --reference results/logits/bf16-32.kld \
+  --candidate results/logits/q2-32.kld \
+  --output-dir results/bf16_low_rank_structure_q2 --jobs 2
+```
+
+The learned and Gaussian oracle rank curves are:
+
+| Directions | Learned KL | Gaussian-null KL | Learned advantage |
+|---:|---:|---:|---:|
+| 1 | 0.1958070 | 0.1955216 | -0.0002855 |
+| 2 | 0.1780480 | 0.1790250 | 0.0009770 |
+| 4 | 0.1537440 | 0.1555497 | 0.0018058 |
+| 8 | 0.1238309 | 0.1272242 | 0.0033933 |
+| 16 | 0.0950399 | 0.0989945 | 0.0039546 |
+| 32 | 0.0721075 | 0.0746878 | 0.0025804 |
+
+At rank 16, learned PCA recovers 57.09% of raw KL, but Gaussian random directions already
+recover 55.30%, sign-randomized PCA recovers 51.82%, and token-permuted PCA recovers
+34.65%. Learned PCA beats every sampled rank-16 control in every outer fold, and its first
+singular value is 1.66 times the sign-null mean, so the residual matrix does contain a
+coherent token-aligned covariance signal. However, the learned advantage over the mean
+Gaussian oracle is only 0.0039546 KL, 3.1% of the total learned-oracle reduction. Its
+four-block t interval is [-0.0004270, 0.0083363].
+
+The distribution explains why arbitrary directions are so powerful: BF16 has median
+effective support 9.7 and mean top-16 mass 85.9%; Q2 has median effective support 15.1 and
+mean top-16 mass 82.0%. Sixteen random directions plus target-aware coefficients can fit
+much of this plausible-token head independently at every row.
+
+The corrected conclusion is nuanced. There is suggestive transferable covariance, but no
+sharp low-dimensional cutoff, and the learned rank curve closely follows the Gaussian
+null through rank 32. The prior 57% figure mostly measures generic per-row oracle capacity;
+it does not prove an intrinsically 16-dimensional residual or show that amplitude inference
+is the sole missing ingredient. Future predictors should optimize BF16 KL directly and all
+oracle claims should retain equal-rank random controls. Full results are in
+`results/bf16_low_rank_structure_q2/LOW_RANK_STRUCTURE.md`.
+
+The prose-trained bases were then frozen before loading the existing code captures:
+
+```bash
+python3 evaluate_frozen_low_rank_structure.py \
+  --train-reference results/logits/bf16-32.kld \
+  --train-candidate results/logits/q2-32.kld \
+  --ood-reference results/logits/bf16-code32.kld \
+  --ood-candidate results/logits/q2-code32.kld \
+  --output-dir results/bf16_low_rank_structure_q2
+```
+
+The OOD result reverses the small in-domain learned advantage at every rank:
+
+| Directions | Learned KL | Gaussian-null KL | Learned advantage |
+|---:|---:|---:|---:|
+| 1 | 0.1523397 | 0.1501769 | -0.0021628 |
+| 2 | 0.1369415 | 0.1288493 | -0.0080922 |
+| 4 | 0.1156910 | 0.1053922 | -0.0102988 |
+| 8 | 0.0942480 | 0.0832724 | -0.0109756 |
+| 16 | 0.0771405 | 0.0666812 | -0.0104593 |
+| 32 | 0.0613929 | 0.0545914 | -0.0068015 |
+
+At rank 16, learned PCA recovers 56.96% of raw code KL, while Gaussian directions recover
+62.79%. Learned PCA wins only 1/32 chunks. Its mean advantage is -0.0104593 with a
+chunk-level t interval [-0.0137749, -0.0071436]. Those chunks still come from one reused
+code file, so this interval is descriptive, but the reversal is large and consistent.
+
+Final conclusion: the prose residual matrix has covariance beyond a sign-randomized null,
+but it is workload-specific and not demonstrated to be intrinsically low-dimensional.
+Nearly all of the original oracle recovery comes from fitting arbitrary target-aware
+directions to a concentrated head. Learned residual PCA is less portable than a random
+subspace here. See
+`results/bf16_low_rank_structure_q2/FROZEN_LOW_RANK_STRUCTURE.md`.
