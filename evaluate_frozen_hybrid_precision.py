@@ -20,41 +20,47 @@ def write_csv(path: Path, rows: list[dict]) -> None:
 
 
 def evaluate(reference: Path, baseline: Path,
-             variants: list[tuple[str, Path]], primary: str) -> tuple[list[dict], list[dict]]:
-    labels = [label for label, _ in variants]
+             variants: list[tuple[str, Path]], primary: str,
+             benchmarks: list[tuple[str, Path]] | None = None) -> tuple[list[dict], list[dict]]:
+    benchmarks = benchmarks or []
+    labels = [label for label, _ in variants + benchmarks]
     if len(set(labels)) != len(labels):
         raise ValueError("variant labels must be unique")
-    if primary not in labels:
-        raise ValueError(f"primary label {primary!r} is not one of {labels}")
+    variant_labels = [label for label, _ in variants]
+    if primary not in variant_labels:
+        raise ValueError(f"primary label {primary!r} is not one of {variant_labels}")
 
     raw, raw_chunks, chunks = evaluate_capture(reference, baseline)
     raw_by_chunk = {row["chunk"]: row for row in raw_chunks}
     summary = [{
-        "label": "Q2 baseline", "is_primary": False, "kl_recovery": 0.0,
+        "label": "Q2 baseline", "role": "baseline", "is_primary": False,
+        "kl_recovery": 0.0,
         "js_recovery": 0.0, "mean_chunk_kl_reduction": 0.0,
         "chunk_interval_low": 0.0, "chunk_interval_high": 0.0,
         "improved_chunks": 0, **raw,
     }]
     chunk_rows = [{"label": "Q2 baseline", **row} for row in raw_chunks]
 
-    for label, capture in variants:
-        aggregate, per_chunk, _ = evaluate_capture(reference, capture, chunks)
-        reductions = np.array([
-            raw_by_chunk[row["chunk"]]["kl"] - row["kl"] for row in per_chunk
-        ], dtype=np.float64)
-        mean = float(reductions.mean())
-        half_width = float(2.040 * reductions.std(ddof=1) / np.sqrt(len(reductions)))
-        summary.append({
-            "label": label, "is_primary": label == primary,
-            "kl_recovery": 1.0 - aggregate["kl"] / raw["kl"],
-            "js_recovery": 1.0 - aggregate["js"] / raw["js"],
-            "mean_chunk_kl_reduction": mean,
-            "chunk_interval_low": mean - half_width,
-            "chunk_interval_high": mean + half_width,
-            "improved_chunks": int((reductions > 0).sum()),
-            **aggregate,
-        })
-        chunk_rows.extend({"label": label, **row} for row in per_chunk)
+    for role, entries in (("hybrid", variants), ("benchmark", benchmarks)):
+        for label, capture in entries:
+            aggregate, per_chunk, _ = evaluate_capture(reference, capture, chunks)
+            reductions = np.array([
+                raw_by_chunk[row["chunk"]]["kl"] - row["kl"] for row in per_chunk
+            ], dtype=np.float64)
+            mean = float(reductions.mean())
+            half_width = float(2.040 * reductions.std(ddof=1) / np.sqrt(len(reductions)))
+            summary.append({
+                "label": label, "role": ("preselected" if label == primary else role),
+                "is_primary": label == primary,
+                "kl_recovery": 1.0 - aggregate["kl"] / raw["kl"],
+                "js_recovery": 1.0 - aggregate["js"] / raw["js"],
+                "mean_chunk_kl_reduction": mean,
+                "chunk_interval_low": mean - half_width,
+                "chunk_interval_high": mean + half_width,
+                "improved_chunks": int((reductions > 0).sum()),
+                **aggregate,
+            })
+            chunk_rows.extend({"label": label, **row} for row in per_chunk)
     return summary, chunk_rows
 
 
@@ -76,7 +82,7 @@ def write_report(path: Path, summary: list[dict], primary: str) -> None:
         if row["label"] == "Q2 baseline":
             role, better, interval = "baseline", "—", "—"
         else:
-            role = "preselected" if row["is_primary"] else "diagnostic"
+            role = row.get("role", "preselected" if row["is_primary"] else "hybrid")
             better = f"{row['improved_chunks']}/32"
             interval = f"[{row['chunk_interval_low']:.6f}, {row['chunk_interval_high']:.6f}]"
         lines.append(
@@ -105,6 +111,8 @@ def main() -> None:
     parser.add_argument("--baseline", type=Path, required=True)
     parser.add_argument("--variant", nargs=2, action="append", default=[],
                         metavar=("LABEL", "LOGITS"))
+    parser.add_argument("--benchmark", nargs=2, action="append", default=[],
+                        metavar=("LABEL", "LOGITS"))
     parser.add_argument("--primary", required=True)
     parser.add_argument("--output-dir", type=Path,
                         default=Path("results/bf16_hybrid_precision"))
@@ -112,7 +120,9 @@ def main() -> None:
     if not args.variant:
         parser.error("at least one --variant is required")
     variants = [(label, Path(capture)) for label, capture in args.variant]
-    summary, chunks = evaluate(args.reference, args.baseline, variants, args.primary)
+    benchmarks = [(label, Path(capture)) for label, capture in args.benchmark]
+    summary, chunks = evaluate(
+        args.reference, args.baseline, variants, args.primary, benchmarks)
     args.output_dir.mkdir(parents=True, exist_ok=True)
     write_csv(args.output_dir / "frozen_hybrid_precision.csv", summary)
     write_csv(args.output_dir / "frozen_hybrid_precision_chunks.csv", chunks)
