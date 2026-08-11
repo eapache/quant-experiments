@@ -844,7 +844,7 @@ the intended source. The three ignored, reproducible model artifacts were built 
 PYTHONPATH=/home/eapache/src/llama.cpp/gguf-py python3 build_hybrid_gguf.py \
   --base /home/eapache/src/llama.cpp/models/custom/Qwen3.5-4B/Qwen3.5-4B-UD-Q2_K_XL.gguf \
   --donor /home/eapache/src/llama.cpp/models/custom/Qwen3.5-4B/Qwen3.5-4B-UD-Q8_K_XL.gguf \
-  --layers 0,1 --output results/models/Qwen3.5-4B-Q2-earlyQ8-2.gguf
+  --layers 0 1 --output results/models/Qwen3.5-4B-Q2-earlyQ8-2.gguf
 ```
 
 The one-, two-, and three-block hybrids add 91.4, 182.8, and 330.7 MiB to the 1.808 GiB
@@ -912,3 +912,32 @@ meaningful magnitude, though one reused code file cannot establish project-level
 During evaluation, a code position with fewer than ten explicit KLD head tokens exposed an
 old top-overlap edge case. `analyze_sparse.metrics` now compares the largest observable
 top-k, up to ten, instead of failing or inventing an ordering among clipped tail ties.
+
+### Q4 versus Q8 early-block donors (2026-08-11)
+
+The block set was held fixed at 0 and 1 while donor precision changed. The generic hybrid
+builder byte-verified a Q4-donor model using:
+
+```bash
+PYTHONPATH=/home/eapache/src/llama.cpp/gguf-py python3 build_hybrid_gguf.py \
+  --base /home/eapache/src/llama.cpp/models/custom/Qwen3.5-4B/Qwen3.5-4B-UD-Q2_K_XL.gguf \
+  --donor /home/eapache/src/llama.cpp/models/custom/Qwen3.5-4B/Qwen3.5-4B-UD-Q4_K_XL.gguf \
+  --layers 0 1 --output results/models/Qwen3.5-4B-Q2-earlyQ4-2.gguf
+```
+
+Its SHA-256 is `f2a42dd7ef6e320a67ab51146b8693931fc8ff0da082d3ecf24f669a60e06621`.
+The file is 2,011,010,368 bytes, only 70,185,120 bytes (66.9 MiB, 3.62%) over Q2.
+Matching prose and code KLD captures use the same commands and sources as the preceding
+hybrid experiment, substituting this model and `earlyq4` output names.
+
+On prose, early-Q4-2 reduces KL from 0.2214713 to 0.2063805, recovering 6.81%; the Q8 donor
+reaches 7.19%. Q4 therefore retains 94.8% of Q8's absolute KL reduction while using 36.6%
+as many added bytes. It improves 26/32 chunks with interval [0.0097875, 0.0203941]. On code,
+Q4 reduces KL from 0.1792153 to 0.1718936 (4.09% recovery), retaining 75.5% of Q8's code
+reduction. It improves 24/32 chunks, but interval [-0.0006077, 0.0152511] crosses zero.
+
+Five-repeat CUDA0 pp128/tg32 benchmarking measured Q2 at 5419.0/230.21 tok/s, early-Q4-2
+at 5408.8/221.46, and early-Q8-2 at 5526.5/221.64. Prompt differences are within run
+variation; Q4 and Q8 donor generation are effectively tied at -3.80% and -3.73% versus
+Q2. Lower donor precision saves 115.9 MiB but not measurable runtime. Exact aggregate,
+chunk, identity, and benchmark data are in `results/bf16_donor_precision/`.

@@ -74,7 +74,7 @@ def write_report(path: Path, summary: list[dict], primary: str) -> None:
         "# Frozen selective-precision hybrid on code",
         "",
         f"**{primary}** was selected on prose for size efficiency before any hybrid code",
-        "logits were loaded. Other block counts are diagnostic curve points only.",
+        "logits were loaded. Other hybrid configurations are diagnostic curve points only.",
         "",
         "| Model | Role | KL | KL recovered | JS recovered | Top-1 | Top-10 | Better chunks | KL interval |",
         "|---|---|---:|---:|---:|---:|---:|---:|---:|",

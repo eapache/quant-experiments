@@ -57,6 +57,10 @@ evaluation over 2,016 teacher-forced positions:
   182.8 MiB (9.88%) and reduces generation throughput by 4.59%. Frozen on code, it recovers
   5.41% across 27/32 chunks with a descriptive interval above zero. A third block has
   sharply worse marginal size efficiency, so the two-block design remains preferred.
+- Using Q4 rather than Q8 for those same two donor blocks retains 94.8% of the prose KL
+  reduction for only 66.9 MiB (3.62%) over Q2. It recovers 4.09% on code versus Q8's 5.41%,
+  but its code chunk interval narrowly crosses zero. Q4 and Q8 donor generation speed is
+  effectively identical, making Q4 the memory Pareto point and Q8 the better-supported one.
 - Cumulative-mass calibration learns a stable global Q2 top-p near 0.939 and recovers
   0.64% sampler JS in held-out prose. Frozen on code, the gain falls to 0.06% with a 95%
   interval crossing zero. Temperature remains the strongest simple portable adjustment.
@@ -87,6 +91,7 @@ distribution, and reference sampler.
 - [`results/bf16_mean_control_q2/FROZEN_MEAN_CONTROL.md`](results/bf16_mean_control_q2/FROZEN_MEAN_CONTROL.md): frozen code-corpus control check
 - [`results/bf16_hybrid_precision/HYBRID_PRECISION.md`](results/bf16_hybrid_precision/HYBRID_PRECISION.md): selective early-block precision/size/speed tradeoff
 - [`results/bf16_hybrid_precision/FROZEN_HYBRID_PRECISION.md`](results/bf16_hybrid_precision/FROZEN_HYBRID_PRECISION.md): frozen code-corpus hybrid check
+- [`results/bf16_donor_precision/HYBRID_PRECISION.md`](results/bf16_donor_precision/HYBRID_PRECISION.md): Q4-versus-Q8 donor precision tradeoff
 - [`results/bf16_mass_q2/MASS_CALIBRATION.md`](results/bf16_mass_q2/MASS_CALIBRATION.md): cumulative-mass calibration
 - [`results/bf16_mass_q2/FROZEN_MASS.md`](results/bf16_mass_q2/FROZEN_MASS.md): frozen code-corpus mass check
 - [`results/bf16_gap_q2/GAP_CALIBRATION.md`](results/bf16_gap_q2/GAP_CALIBRATION.md): monotonic rank-conditioned gap calibration

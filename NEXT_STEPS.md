@@ -243,6 +243,19 @@ This is the first cheap correction here with a clear gain on both workloads, alt
 code interval still reuses chunks from one file rather than independent code projects. See
 `results/bf16_hybrid_precision/FROZEN_HYBRID_PRECISION.md`.
 
+## Completed: donor precision comparison
+
+Replacing the same blocks 0 and 1 from Q4 instead of Q8 adds only 66.9 MiB, versus
+182.8 MiB for Q8. On prose, early-Q4-2 recovers 6.81% of KL—94.8% of the Q8 hybrid's
+absolute KL reduction—and its 32-chunk interval excludes zero. On code it recovers 4.09%,
+or 75.5% of the Q8 reduction, but its interval narrowly crosses zero. Both donor choices
+slow generation by about 3.8% in a paired benchmark, so Q4 saves memory rather than time.
+
+This adds a useful Pareto point: prefer Q4 donor blocks for the strictest memory budget and
+Q8 when the stronger code evidence is worth another 115.9 MiB. The close prose result also
+motivates splitting blocks 0 and 1 by tensor family to find which upgrades carry the gain.
+See `results/bf16_donor_precision/HYBRID_PRECISION.md`.
+
 ## Priority 2: larger-corpus adapter or LoRA distillation
 
 The remaining learned-model test needs substantially more paired and more varied data.

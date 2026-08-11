@@ -1,7 +1,7 @@
 # Selective early-block precision
 
 The hybrids retain every tensor byte from Q2_K_XL except complete early recurrent
-blocks copied from the shape-identical Q8_K_XL GGUF. The builder reopens each model
+blocks copied from a shape-identical higher-precision GGUF. The builder reopens each model
 and verifies every raw tensor payload against its intended source. This experiment was
 chosen from residual-state localization without inspecting hybrid output logits.
 
