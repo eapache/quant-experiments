@@ -969,3 +969,32 @@ recovering 1.91%, and improves 21/32 chunks with interval [-0.0002241, 0.0086782
 carries 72.7% of the full Q4 hybrid's absolute KL reduction with 57.8% of its bytes, and
 delivers 1.90 times the SSM family's KL reduction per added MiB. It is frozen for code
 validation before splitting the three FFN matrix types.
+
+The preselected FFN-only model was then captured on the unchanged code source:
+
+```bash
+/home/eapache/src/llama.cpp/build/bin/llama-perplexity \
+  -m results/models/Qwen3.5-4B-Q2-earlyQ4-2-ffn.gguf \
+  -f chats/quant-sampler-compensation-lab/quant_sampler_lab.py \
+  -c 128 -b 128 -ub 128 --chunks 32 -t 12 --no-warmup \
+  -dev CUDA0 -sm none -ngl all \
+  --kl-divergence-base results/logits/q2-code-earlyq4-2-ffn.kld
+
+python3 evaluate_frozen_hybrid_precision.py \
+  --reference results/logits/bf16-code32.kld --baseline results/logits/q2-code32.kld \
+  --variant Q4-FFN-only results/logits/q2-code-earlyq4-2-ffn.kld \
+  --variant Q4-full-blocks results/logits/q2-code-earlyq4-2.kld \
+  --benchmark Q8-full-blocks results/logits/q2-code-earlyq8-2.kld \
+  --primary Q4-FFN-only --output-dir results/bf16_tensor_families
+```
+
+Code KL falls from 0.1792153 to 0.1706995, recovering 4.75%; JS recovery is 4.63%.
+FFN-only improves 28/32 chunks with interval [0.0049765, 0.0120551]. It unexpectedly
+outperforms the complete Q4 block upgrade on this file (4.09%, 24/32 chunks) and retains
+87.8% of the Q8 block hybrid's absolute KL reduction while using 21.2% as many added bytes.
+
+A paired five-repeat CUDA0 pp128/tg32 benchmark measured Q2 at 5429.5/230.00 tok/s,
+FFN-only at 5467.6/222.54, complete Q4 blocks at 5407.9/226.47, and complete Q8 blocks at
+5534.3/220.70. FFN-only generation is 3.25% below Q2. Differences among hybrids are smaller
+than their run standard deviations, so there is no defensible family-level speed ordering.
+Raw aggregates are in `results/bf16_tensor_families/family_throughput.csv`.

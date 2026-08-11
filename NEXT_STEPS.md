@@ -256,7 +256,7 @@ Q8 when the stronger code evidence is worth another 115.9 MiB. The close prose r
 motivates splitting blocks 0 and 1 by tensor family to find which upgrades carry the gain.
 See `results/bf16_donor_precision/HYBRID_PRECISION.md`.
 
-## Completed provisionally: early-block tensor families
+## Completed: early-block tensor families
 
 The byte-verifying builder now accepts tensor-name regexes. Within Q4 donor blocks 0 and
 1, the six `ffn_*` matrices add 38.7 MiB and recover 4.95% of prose KL, improving 28/32
@@ -264,9 +264,14 @@ chunks with interval [0.005767, 0.016164]. The recurrent family (`attn_gate`, `a
 and `ssm_*`) adds 28.3 MiB but recovers only 1.91%, improves 21/32 chunks, and has an
 interval crossing zero. FFN delivers 1.90 times as much KL reduction per added MiB.
 
-FFN-only is selected before loading family-level code logits. If it transfers, split its
-up, gate, and down matrices; if it does not, retain the complete Q4 block as the cheaper
-validated design. See `results/bf16_tensor_families/HYBRID_PRECISION.md`.
+FFN-only was selected before loading family-level code logits. Frozen on code, it recovers
+4.75% of KL, improves 28/32 chunks, and has interval [0.004977, 0.012055]. It slightly beats
+the complete Q4 block's 4.09% code recovery despite using 28.3 MiB fewer, and retains 87.8%
+of the Q8 block hybrid's reduction with 21.2% of its added bytes. Generation is 3.25% slower
+than Q2 in a paired run; hybrid-to-hybrid differences are within run variability.
+
+The FFN family is therefore validated well enough to split its up, gate, and down matrices.
+See `results/bf16_tensor_families/FROZEN_HYBRID_PRECISION.md`.
 
 ## Priority 2: larger-corpus adapter or LoRA distillation
 
@@ -322,7 +327,8 @@ All advanced experiments should retain the safeguards established by the current
 
 ## Recommended next decisive experiment
 
-Validate the frozen Q4 FFN-only family on code before splitting individual FFN matrices.
+Split the validated Q4 FFN family into down, gate, and up matrix ablations, selecting on
+prose before any new code captures.
 Separately, collect many independently sourced documents before adding learned model
 capacity; more positions from the same transcript will not resolve workload-level
 uncertainty. For another learned
