@@ -1028,3 +1028,20 @@ interval [0.0051220, 0.0170939]. This slightly improves on all-FFN KL 0.2105060 
 removing 18,432,224 bytes of down matrices. Gate+up is selected as the primary sub-25-MiB
 model before loading code. Up-only remains a smaller diagnostic Pareto point, but code
 results cannot promote it over the preselected combination.
+
+The frozen code captures then used the unchanged Python source and standard CUDA0 command
+for gate+up and the diagnostic up-only endpoint. `evaluate_frozen_hybrid_precision.py`
+kept gate+up marked primary and compared both with existing all-FFN and Q8-block captures.
+
+Gate+up reduces code KL from 0.1792153 to 0.1737914, recovering 3.03%; JS recovery is
+3.48%. It improves 24/32 chunks with interval [0.0017434, 0.0091044]. Up-only recovers just
+1.28%, improves 20/32 chunks, and has interval [-0.0012136, 0.0058179]. Gate+up therefore
+retains 55.9% of the Q8 block hybrid's code KL reduction while using 11.5% as many added
+bytes. All-FFN is stronger on code at 4.75%, so the down matrix's contribution is workload
+dependent despite its negative isolated prose result.
+
+A paired five-repeat pp128/tg32 benchmark measured Q2 at 5941.0/233.81 tok/s, up-only at
+5940.8/232.58, gate+up at 6002.1/232.03, and all-FFN at 5968.3/230.42. Gate+up generation
+is 0.76% below Q2, within roughly one run standard deviation; prompt throughput is likewise
+unchanged within variation. Raw results are in
+`results/bf16_ffn_gate_up/gate_up_throughput.csv`.

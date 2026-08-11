@@ -285,7 +285,7 @@ Because gate and up are both positive while down is negative, test the predeclar
 use individual matrix code captures in that choice. See
 `results/bf16_ffn_matrices/HYBRID_PRECISION.md`.
 
-## Completed provisionally: gate+up combination
+## Completed: gate+up combination
 
 The predeclared Q4 gate+up model replaces four matrices across blocks 0 and 1 and adds
 21.1 MiB (1.14%) to Q2. It recovers 5.02% of prose KL, improves 27/32 chunks, and has
@@ -293,8 +293,13 @@ interval [0.005122, 0.017094]. It slightly beats the complete 38.7 MiB FFN upgra
 confirming that the Q4 down matrices are unnecessary for this workload.
 
 Gate+up is frozen as the primary sub-25-MiB design for code. Up-only remains a secondary
-10.5 MiB memory endpoint; code must not be used to switch the primary designation. See
-`results/bf16_ffn_gate_up/HYBRID_PRECISION.md`.
+10.5 MiB memory endpoint; code must not be used to switch the primary designation.
+
+On frozen code, gate+up recovers 3.03% of KL, improves 24/32 chunks, and has interval
+[0.001743, 0.009104]. Up-only drops to 1.28% and crosses zero, so gate is needed for the
+portable gain. Gate+up retains 55.9% of the Q8 block hybrid's code KL reduction with only
+11.5% of its added bytes. Generation is 0.76% below Q2 in a paired run, within roughly one
+run standard deviation. See `results/bf16_ffn_gate_up/FROZEN_HYBRID_PRECISION.md`.
 
 ## Priority 2: larger-corpus adapter or LoRA distillation
 
@@ -350,8 +355,8 @@ All advanced experiments should retain the safeguards established by the current
 
 ## Recommended next decisive experiment
 
-Validate the frozen Q4 gate+up design on code and benchmark it against Q2, up-only, and the
-validated all-FFN model.
+Split the validated gate+up tensors by block 0 versus block 1 to test whether another half
+of the 21.1 MiB can be removed without losing the cross-workload gain.
 Separately, collect many independently sourced documents before adding learned model
 capacity; more positions from the same transcript will not resolve workload-level
 uncertainty. For another learned
