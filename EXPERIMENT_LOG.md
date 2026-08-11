@@ -539,3 +539,44 @@ from 0.1792113 to 0.1876659 (-4.72% recovery). Monotonic gap calibration is ther
 a repeatable or portable improvement. This exhausts the planned methods that consume only
 the existing saved logits; the next experiment should expose the final hidden state and
 distill BF16 residual amplitudes from substantially more paired data.
+
+### Final-hidden-state residual map (2026-08-11)
+
+The installed llama.cpp revision exposes Qwen3.5's normalized final hidden state through
+`llama_set_embeddings_nextn`. `extract_hidden_states.cpp` is a repository-local extractor
+that reads the exact token stream and chunk layout from a `.kld` header, repeats the
+perplexity tool's BOS and latter-half output rules, and writes 2,560 float32 features for
+each of the 63 evaluated positions per chunk. Device selection is explicitly restricted
+to CUDA0 with split mode `none`, matching the existing captures. The 2,016-row artifact is
+about 20 MiB and is ignored as reproducible intermediate data.
+
+```bash
+./build_hidden_extractor.sh
+./extract_hidden_states \
+  --model /home/eapache/src/llama.cpp/models/custom/Qwen3.5-4B/Qwen3.5-4B-UD-Q2_K_XL.gguf \
+  --tokens results/logits/q2-32.kld \
+  --output results/logits/q2-hidden-32.bin \
+  --gpu-layers 999 --device CUDA0 --threads 12
+
+.venv/bin/python analyze_hidden_adapter.py \
+  --reference results/logits/bf16-32.kld \
+  --candidate results/logits/q2-32.kld \
+  --hidden results/logits/q2-hidden-32.bin \
+  --reference-label BF16 --candidate-label Q2_K_XL \
+  --output-dir results/bf16_hidden_q2
+```
+
+`analyze_hidden_adapter.py` maps all hidden dimensions to 4, 8, or 16 oracle residual
+amplitudes using kernel-form ridge regression. Four outer folds hold out eight complete
+chunks, while inner chunk splits select direction count and ridge alpha including a null
+option. All four folds select null. The best forced non-null settings use alpha 100,000
+and worsen KL in every fold: aggregate KL is 0.2313056 versus 0.2178012 for temperature
+plus static token bias, or -4.44% recovery from raw. Top-10 overlap falls from 75.9% to
+75.1%. The corresponding 16-direction oracle remains strong at KL 0.0952049 (57.01%
+recovery), confirming that amplitude prediction remains the bottleneck.
+
+This is a first pass, not the originally proposed large-data adapter experiment: it still
+uses only 2,016 paired prose positions. It is strong evidence against increasing model
+capacity on this same calibration set. A follow-up should first expand paired prose well
+beyond 2,016 positions, then reuse the extractor; if the final-state map remains rejected,
+an earlier-layer state or true last-block/LoRA distillation is the more distinct test.

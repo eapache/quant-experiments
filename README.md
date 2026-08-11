@@ -32,6 +32,9 @@ evaluation over 2,016 teacher-forced positions:
 - A 1,624-6,448 parameter nonlinear predictor using the top-64 shape and residual-basis
   projections is also rejected in every fold. Forced use recovers -6.75% of KL while the
   same 16-direction oracle remains at 57.09%.
+- A ridge map from all 2,560 dimensions of Q2's normalized final hidden state is rejected
+  in every fold. Forced use recovers -4.44% of KL, while the corresponding oracle still
+  recovers 57.01%. A larger paired corpus is required before attempting an in-model adapter.
 - Cumulative-mass calibration learns a stable global Q2 top-p near 0.939 and recovers
   0.64% sampler JS in held-out prose. Frozen on code, the gain falls to 0.06% with a 95%
   interval crossing zero. Temperature remains the strongest simple portable adjustment.
@@ -52,6 +55,7 @@ distribution, and reference sampler.
 - [`results/bf16_low_rank_q2/LOW_RANK.md`](results/bf16_low_rank_q2/LOW_RANK.md): nested low-rank diagnostic
 - [`results/bf16_posterior_q2/POSTERIOR.md`](results/bf16_posterior_q2/POSTERIOR.md): empirical posterior sampler
 - [`results/bf16_neural_low_rank_q2/NEURAL_LOW_RANK.md`](results/bf16_neural_low_rank_q2/NEURAL_LOW_RANK.md): tiny nonlinear predictor
+- [`results/bf16_hidden_q2/HIDDEN_ADAPTER.md`](results/bf16_hidden_q2/HIDDEN_ADAPTER.md): final-hidden-state ridge map
 - [`results/bf16_mass_q2/MASS_CALIBRATION.md`](results/bf16_mass_q2/MASS_CALIBRATION.md): cumulative-mass calibration
 - [`results/bf16_mass_q2/FROZEN_MASS.md`](results/bf16_mass_q2/FROZEN_MASS.md): frozen code-corpus mass check
 - [`results/bf16_gap_q2/GAP_CALIBRATION.md`](results/bf16_gap_q2/GAP_CALIBRATION.md): monotonic rank-conditioned gap calibration
@@ -94,6 +98,10 @@ python3 evaluate_frozen_sampler.py \
 ```
 
 The BF16-relative commands and low-rank experiment are recorded in `EXPERIMENT_LOG.md`.
+
+The final-hidden-state experiment additionally builds `extract_hidden_states.cpp` with
+`./build_hidden_extractor.sh`, extracts CUDA0-aligned Q2 states from a `.kld` token header,
+and runs `analyze_hidden_adapter.py`. Exact commands are in `EXPERIMENT_LOG.md`.
 
 NumPy is the only non-standard Python dependency for the sparse analyses. The dense
 analyzer also uses SciPy.

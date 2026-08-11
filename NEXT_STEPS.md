@@ -13,7 +13,8 @@ quantization-compensation hierarchy and several higher-capacity residual models:
 - global and entropy-conditioned cumulative-mass calibration;
 - a conditional empirical posterior over correlated rank-wise head errors;
 - a 1,624-6,448 parameter nonlinear predictor of low-rank residual amplitudes;
-- monotonic direct and consistent pairwise rank-gap calibration.
+- monotonic direct and consistent pairwise rank-gap calibration;
+- a 2,560-feature final-hidden-state ridge map to residual amplitudes.
 
 Deployable methods recovered only a few percent of divergence toward BF16. The low-rank
 oracle recovered much more, but ridge, nearest-neighbor posterior, and tiny nonlinear
@@ -106,12 +107,27 @@ code improves its static-bias baseline by only 0.000051 KL, interval
 [-0.000190, 0.000292]. The static bias itself transfers poorly, worsening raw code KL by
 4.72%. Gap calibration therefore does not provide repeatable or portable improvement.
 
-## Priority 2: hidden-state adapter or LoRA distillation
+## Completed first pass: final-hidden-state residual map
 
-The next useful source of information is the Q2 model's final hidden state. Train a small
-residual head, last-block adapter, or LoRA against BF16 soft targets. This
-is qualitatively different from a tiny transformer over logits: the hidden state can
-contain context information erased by the quantized output distribution.
+`extract_hidden_states.cpp` uses llama.cpp's staging API to save the normalized Q2 final
+hidden state immediately before the LM head. It consumes the token header from the `.kld`
+file, so all 2,016 rows align exactly with the existing CUDA0 BF16/Q2 distributions.
+`analyze_hidden_adapter.py` fits a kernel-form ridge map from all 2,560 hidden dimensions
+to the same head-restricted oracle residual amplitudes used by the low-rank diagnostic.
+Direction count and ridge strength are nested-selected with a null option.
+
+All four folds reject the hidden map. Forced use chooses very strong regularization and
+worsens KL from the static-bias baseline's 0.2178012 to 0.2313056, or -4.44% recovery
+from raw. The 16-direction oracle still recovers 57.01%. The normalized final state does
+not unlock the residual amplitudes at this sample size; because it feeds a linear output
+head, it is also closely related to information already present in the full logits. See
+`results/bf16_hidden_q2/HIDDEN_ADAPTER.md`.
+
+## Priority 2: larger-corpus adapter or LoRA distillation
+
+The remaining learned-model test needs substantially more paired and more varied data.
+Only then is it worth trying an earlier-layer state, residual head, last-block adapter,
+or LoRA against BF16 soft targets.
 
 Start with the least invasive version:
 
@@ -158,7 +174,9 @@ All advanced experiments should retain the safeguards established by the current
 
 ## Recommended next decisive experiment
 
-Expand the paired corpus, export aligned Q2 final hidden states, and train a low-rank map
-to the 16 BF16 residual amplitudes identified by the oracle diagnostic. Validate first on
-held-out prose chunks and then frozen on code. Additional calibration models that see only
-the same 2,016 saved output distributions are unlikely to close the 57% oracle gap.
+Expand the paired prose corpus well beyond 2,016 positions before adding model capacity.
+Reuse the working aligned hidden-state extractor, validate on held-out prose chunks, and
+only then freeze the transform for code. If a larger final-state map is still rejected,
+test an earlier-layer state or a true in-model adapter rather than another output-only
+calibrator. The existing 2,016-position output distributions and final states do not
+support a deployable correction beyond the simple baselines.
