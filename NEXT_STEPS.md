@@ -301,14 +301,20 @@ portable gain. Gate+up retains 55.9% of the Q8 block hybrid's code KL reduction 
 11.5% of its added bytes. Generation is 0.76% below Q2 in a paired run, within roughly one
 run standard deviation. See `results/bf16_ffn_gate_up/FROZEN_HYBRID_PRECISION.md`.
 
-## Completed provisionally: gate+up layer split
+## Completed: gate+up layer split
 
 Q4 gate+up in block 1 alone adds 10.5 MiB (0.57%) and recovers 2.81% of prose KL, improving
 24/32 chunks with interval [0.002977, 0.009454]. Block 0 alone recovers 2.31%, improves
 23/32, and also excludes zero. The effects are approximately additive, but block 1 retains
 56.0% of the two-block reduction for half its bytes and is the preselected single-block
-design. Code validation remains pending. See
-`results/bf16_gate_up_layers/HYBRID_PRECISION.md`.
+design.
+
+Frozen on code, block 1 recovers only 1.50%, improves 19/32 chunks, and has interval
+[-0.000308, 0.005700]. It retains about half the two-block reduction but does not establish
+a portable gain. A 20-repeat benchmark places block 1 and the two-block design 0.66% and
+1.14% below Q2 generation speed, both smaller than run standard deviations. The two-block
+21.1 MiB gate+up model remains the smallest supported configuration. See
+`results/bf16_gate_up_layers/FROZEN_HYBRID_PRECISION.md`.
 
 ## Priority 2: larger-corpus adapter or LoRA distillation
 
@@ -364,8 +370,9 @@ All advanced experiments should retain the safeguards established by the current
 
 ## Recommended next decisive experiment
 
-Validate the preselected block-1-only gate+up model on code and benchmark it against Q2 and
-the validated two-block gate+up model.
+Retain the two-block Q4 gate+up model as the compact recommendation. Before more
+same-corpus tensor selection, validate it across multiple independently sourced prose and
+code workloads; the current chunk intervals measure positions within only two files.
 Separately, collect many independently sourced documents before adding learned model
 capacity; more positions from the same transcript will not resolve workload-level
 uncertainty. For another learned

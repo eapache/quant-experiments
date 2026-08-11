@@ -1059,3 +1059,15 @@ interval [0.0019541, 0.0082672]. Block 1 reaches 0.2152561 (2.81%), improves 24/
 interval [0.0029765, 0.0094538]. Their reductions are approximately additive. Block 1
 retains 56.0% of the two-block model's reduction for half the bytes and is selected before
 its code capture is generated.
+
+On frozen code, block 1 reduces KL from 0.1792153 to 0.1765193, recovering 1.50%. It
+improves only 19/32 chunks, and interval [-0.0003080, 0.0057001] crosses zero. The model
+retains 49.7% of the validated two-block code KL reduction for half the bytes, but the
+single-block gain is not established.
+
+Because five-repeat throughput changed noticeably across GPU states, the final comparison
+used 20 repeats. Q2, block 1, and blocks 0+1 measured 5759.6/225.84, 5819.2/224.35, and
+5894.6/223.27 pp128/tg32 tok/s. The generation differences are -0.66% and -1.14%, smaller
+than run standard deviations of 2.42-3.45 tok/s. The two-block 21.1 MiB model remains the
+smallest design with a clear gain on both workloads; further selection should wait for
+multiple independent documents rather than reusing these same two files.

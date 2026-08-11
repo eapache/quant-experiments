@@ -1,0 +1,4 @@
+model,repetitions,pp128_tokens_per_second,pp128_stddev,pp128_change_percent,tg32_tokens_per_second,tg32_stddev,tg32_change_percent
+Q2 baseline,20,5759.586564,405.902093,0.0000,225.836753,3.450105,0.0000
+Q4-block1-gate+up,20,5819.194488,330.803125,1.0349,224.350067,2.424227,-0.6583
+Q4-blocks0+1-gate+up,20,5894.580379,295.512025,2.3438,223.269880,2.917378,-1.1366
