@@ -1,0 +1,2 @@
+model,layers,matrix,replaced_tensors,bytes,added_from_q2_bytes,added_from_q2_mib,marginal_bytes,marginal_mib,sha256
+Q4-blocks0+1+2-gate+up,0;1;2,ffn_gate;ffn_up,6,1975108992,34283744,32.7,12165120,11.6,4e603366783224a6793950a396bf83ac1b769bf9cb23a372bda6cca2a7edf4f6

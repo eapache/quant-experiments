@@ -82,6 +82,9 @@ evaluation over 2,016 teacher-forced positions:
   C++, technical Markdown, and GPL prose—with 2.66% pooled KL recovery. Its document-level
   interval crosses zero, so this is consistent cross-format direction rather than a precise
   estimate of a universal effect.
+- Extending gate+up into recurrent block 2 adds another 11.6 MiB but raises prose recovery
+  only from 5.02% to 5.35%. It improves 18/32 chunks versus the compact model and its paired
+  incremental interval crosses zero, so the extension is rejected without confirmation.
 - Cumulative-mass calibration learns a stable global Q2 top-p near 0.939 and recovers
   0.64% sampler JS in held-out prose. Frozen on code, the gain falls to 0.06% with a 95%
   interval crossing zero. Temperature remains the strongest simple portable adjustment.
@@ -124,6 +127,7 @@ distribution, and reference sampler.
 - [`results/bf16_document_confirmation/DOCUMENT_CONFIRMATION.md`](results/bf16_document_confirmation/DOCUMENT_CONFIRMATION.md): frozen multi-document result
 - [`results/bf16_external_confirmation/CORPUS.md`](results/bf16_external_confirmation/CORPUS.md): predeclared external mixed-format set
 - [`results/bf16_external_confirmation/DOCUMENT_CONFIRMATION.md`](results/bf16_external_confirmation/DOCUMENT_CONFIRMATION.md): external mixed-format result
+- [`results/bf16_gate_up_block2/INCREMENTAL_PRECISION.md`](results/bf16_gate_up_block2/INCREMENTAL_PRECISION.md): rejected block-2 extension
 - [`results/bf16_mass_q2/MASS_CALIBRATION.md`](results/bf16_mass_q2/MASS_CALIBRATION.md): cumulative-mass calibration
 - [`results/bf16_mass_q2/FROZEN_MASS.md`](results/bf16_mass_q2/FROZEN_MASS.md): frozen code-corpus mass check
 - [`results/bf16_gap_q2/GAP_CALIBRATION.md`](results/bf16_gap_q2/GAP_CALIBRATION.md): monotonic rank-conditioned gap calibration

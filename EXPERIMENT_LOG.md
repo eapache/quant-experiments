@@ -1135,3 +1135,18 @@ Pooled KL falls from 0.4842381 to 0.4713369 over 8,064 positions (2.66%); pooled
 is 2.46%. Mean absolute whole-document KL reduction is 0.0129012 with interval
 [-0.0022326, 0.0280350]. The cross-format direction is consistent, but the wide magnitude
 variation makes this four-document set inconclusive by itself.
+
+### Block-2 gate+up extension (2026-08-11)
+
+The next nested model added the same Q4 `ffn_gate` and `ffn_up` tensors in block 2. The
+builder verified all 426 payloads; six tensors are replaced across blocks 0-2. Its size is
+1,975,108,992 bytes, 34,283,744 bytes (32.7 MiB) over Q2 and 12,165,120 bytes (11.6 MiB)
+over the validated compact model. Block 2 moves IQ3_S tensors to Q5_K. SHA-256 is
+`4e603366783224a6793950a396bf83ac1b769bf9cb23a372bda6cca2a7edf4f6`.
+
+The original prose capture was compared pairwise with the fixed blocks-0-1 model using
+`evaluate_incremental_precision.py`. Total KL reaches 0.2096200, or 5.35% recovery from Q2,
+versus 0.2103633 and 5.02% for blocks 0-1. The extension improves only 18/32 paired chunks;
+mean incremental KL reduction is 0.0007433 with interval [-0.0016076, 0.0030942]. It fails
+the predeclared requirement that incremental improvement exclude zero. No confirmation
+captures or benchmark are warranted; the 21.1 MiB blocks-0-1 model remains preferred.

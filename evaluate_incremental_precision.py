@@ -94,7 +94,7 @@ def write_report(path: Path, summary: list[dict], comparison: dict,
     lines = [
         "# Incremental selective-precision test",
         "",
-        f"The **{extension_label}** design was predeclared as a {added_mib:.1f} MiB extension",
+        f"The **{extension_label}** design was predeclared as a marginal {added_mib:.1f} MiB extension",
         f"to **{current_label}**. It passes only if its paired per-chunk KL reduction over the",
         "current model has a descriptive interval above zero.",
         "",

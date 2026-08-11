@@ -393,10 +393,18 @@ first set's document interval excludes zero; the more heterogeneous external set
 supportive but inconclusive on its own. See
 `results/bf16_external_confirmation/DOCUMENT_CONFIRMATION.md`.
 
+## Completed: block-2 gate+up extension
+
+Adding Q4 gate and up matrices in block 2 costs another 11.6 MiB because its Q2 tensors are
+IQ3_S and Q4 uses Q5_K. Total prose KL recovery rises only from 5.02% to 5.35%. The nested
+extension improves 18/32 chunks; mean incremental reduction is 0.0007433 with interval
+[-0.0016076, 0.0030942]. It fails the predeclared incremental gate and is not promoted to
+code or multi-document confirmation. Blocks 0-1 remain the compact recommendation. See
+`results/bf16_gate_up_block2/INCREMENTAL_PRECISION.md`.
+
 ## Recommended next decisive experiment
 
-Retain blocks 0-1 gate+up as the compact recommendation. Test one predeclared extension:
-add the same two Q4 matrices in block 2 for another 10.5 MiB. Residual localization showed
-the third recurrent block participates in the early error jump, while full-block Q8 there
-was inefficient because unrelated tensors became F16. Select using the original prose
-corpus only, then keep any decision frozen across the confirmation documents.
+Keep the 21.1 MiB blocks-0-1 model fixed and test a zero-memory addition: refit only the
+global sampler temperature against BF16 for hybrid logits. Compare hybrid identity,
+the original Q2-frozen temperature, and hybrid-specific nested calibration; freeze any
+hybrid-specific setting before evaluating code and confirmation documents.
